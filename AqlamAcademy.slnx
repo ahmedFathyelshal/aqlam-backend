@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Core/">
+    <Project Path="src/Core/AqlamAcademy.Domain/AqlamAcademy.Domain.csproj" />
+    <Project Path="src/Core/AqlamAcademy.Application/AqlamAcademy.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/Infrastructure/AqlamAcademy.Persistence/AqlamAcademy.Persistence.csproj" />
+    <Project Path="src/Infrastructure/AqlamAcademy.Localization/AqlamAcademy.Localization.csproj" />
+    <Project Path="src/Infrastructure/AqlamAcademy.Migrators.PostgreSQL/AqlamAcademy.Migrators.PostgreSQL.csproj" />
+    <Project Path="src/Infrastructure/AqlamAcademy.Migrators.SqlServer/AqlamAcademy.Migrators.SqlServer.csproj" />
+  </Folder>
+  <Folder Name="/src/Web/">
+    <Project Path="src/Web/AqlamAcademy.Api/AqlamAcademy.Api.csproj" />
+  </Folder>
+</Solution>
