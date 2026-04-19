@@ -141,4 +141,16 @@
   <data name="InvalidUserType" xml:space="preserve">
     <value>نوع المستخدم المحدد غير صالح.</value>
   </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>اسم المستخدم أو كلمة المرور غير صحيحة.</value>
+  </data>
+  <data name="UserAccountDeleted" xml:space="preserve">
+    <value>تم مسح هذا الحساب.</value>
+  </data>
+  <data name="UserAccountLocked" xml:space="preserve">
+    <value>تم إغلاق هذا الحساب بسبب محاولات تسجيل الدخول الفاشلة المتعددة. يرجى المحاولة مرة أخرى في {0}.</value>
+  </data>
+  <data name="UserNameRequired" xml:space="preserve">
+    <value>اسم المستخدم مطلوب.</value>
+  </data>
 </root>

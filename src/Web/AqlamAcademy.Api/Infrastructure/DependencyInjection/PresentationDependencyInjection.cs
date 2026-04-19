@@ -20,7 +20,7 @@ public static class PresentationDependencyInjection
     public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration)
     {
         // 1. Localization
-        services.AddLocalization();
+        services.AddLocalization(options => options.ResourcesPath = "Resources");
         services.AddScoped<ILocalizationService, LocalizationService>();
 
         // 2. Mapster
