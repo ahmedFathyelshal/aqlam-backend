@@ -14,20 +14,64 @@ public class IdentityService : IIdentityService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<IdentityService> _logger;
+    private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly ILocalizationService _localizer;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager,
         ApplicationDbContext context,
-        ILogger<IdentityService> logger)
+        ILogger<IdentityService> logger,
+        IJwtTokenGenerator jwtTokenGenerator,
+        ILocalizationService localizer)
     {
         _userManager = userManager;
         _context = context;
         _logger = logger;
+        _jwtTokenGenerator = jwtTokenGenerator;
+        _localizer = localizer;
     }
 
     public async Task<bool> IsUserNameUniqueAsync(string userName)
     {
         return await _userManager.FindByNameAsync(userName) == null;
+    }
+
+    public async Task<Result<AuthTokens>> LoginAsync(string userName, string password)
+    {
+        var user = await _userManager.FindByNameAsync(userName);
+        
+        if (user == null)
+            return Result<AuthTokens>.Failure(new[] { _localizer["InvalidCredentials"] });
+
+        if (user.IsDeleted)
+            return Result<AuthTokens>.Failure(new[] { _localizer["UserAccountDeleted"] });
+
+        if (await _userManager.IsLockedOutAsync(user))
+        {
+            var lockoutEnd = user.LockoutEnd?.ToLocalTime().ToString("g") ?? "later";
+            return Result<AuthTokens>.Failure(new[] { _localizer.GetLocalizedString("UserAccountLocked", lockoutEnd) });
+        }
+
+        var checkPasswordResult = await _userManager.CheckPasswordAsync(user, password);
+        if (!checkPasswordResult)
+        {
+            await _userManager.AccessFailedAsync(user);
+            return Result<AuthTokens>.Failure(new[] { _localizer["InvalidCredentials"] });
+        }
+        
+        // Reset access failed count on successful login
+        await _userManager.ResetAccessFailedCountAsync(user);
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        var token = _jwtTokenGenerator.GenerateToken(
+            user.Id, 
+            user.UserName!, 
+            user.Email ?? string.Empty, 
+            roles, 
+            out var expiration);
+
+        return Result<AuthTokens>.Success(new AuthTokens(token, expiration));
     }
 
     public async Task<Result<Guid>> CreateUserAsync(

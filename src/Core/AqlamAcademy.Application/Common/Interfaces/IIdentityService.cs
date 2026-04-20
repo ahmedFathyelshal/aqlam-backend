@@ -15,4 +15,6 @@ public interface IIdentityService
         
     Task<bool> IsUserNameUniqueAsync(string userName);
 
+    // Login
+    Task<Result<AuthTokens>> LoginAsync(string userName, string password);
 }

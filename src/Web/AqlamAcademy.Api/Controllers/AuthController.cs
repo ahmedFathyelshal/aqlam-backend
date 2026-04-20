@@ -3,6 +3,7 @@ using MediatR;
 using MapsterMapper;
 using AqlamAcademy.Api.Contracts.Auth;
 using AqlamAcademy.Application.Features.Auth.Commands.Register;
+using AqlamAcademy.Application.Features.Auth.Commands.Login;
 using AqlamAcademy.Application.Common.Models;
 
 namespace AqlamAcademy.Api.Controllers;
@@ -30,5 +31,21 @@ public class AuthController : ControllerBase
             return BadRequest(result);
 
         return Ok(result);
+    }
+
+    [HttpPost("login")]
+    public async Task<ActionResult<Result<LoginResponse>>> Login(LoginRequest request)
+    {
+        var command = _mapper.Map<LoginUserCommand>(request);
+        var result = await _mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        var response = _mapper.Map<LoginResponse>(result.Data!);
+
+        var finalResult = Result<LoginResponse>.Success(response);
+
+        return Ok(finalResult);
     }
 }

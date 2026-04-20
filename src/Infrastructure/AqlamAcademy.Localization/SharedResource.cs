@@ -17,4 +17,7 @@ public class SharedResource
     public const string FullNameRequired = "FullNameRequired";
     public const string FullNameTooLong = "FullNameTooLong";
     public const string InvalidUserType = "InvalidUserType";
+    public const string InvalidCredentials = "InvalidCredentials";
+    public const string UserAccountDeleted = "UserAccountDeleted";
+    public const string UserAccountLocked = "UserAccountLocked";
 }

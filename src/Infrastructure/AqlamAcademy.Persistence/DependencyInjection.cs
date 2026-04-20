@@ -56,8 +56,9 @@ public static class DependencyInjection
         // 3. Application Services
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<ApplicationDbInitializer>();
+        services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
 
         return services;
     }
 }
-
