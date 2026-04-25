@@ -2,6 +2,7 @@ using MediatR;
 using AqlamAcademy.Application.Common.Interfaces;
 using AqlamAcademy.Application.Common.Models;
 using AqlamAcademy.Domain.Enums;
+using Microsoft.Extensions.Logging;
 
 namespace AqlamAcademy.Application.Features.Auth.Commands.Register;
 
@@ -17,14 +18,22 @@ public record RegisterUserCommand : IRequest<Result<RegisterResult>>
 public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, Result<RegisterResult>>
 {
     private readonly IIdentityService _identityService;
+    private readonly ILocalizationService _localizer;
+    private readonly ILogger<RegisterUserCommandHandler> _logger;
 
-    public RegisterUserCommandHandler(IIdentityService identityService)
+    public RegisterUserCommandHandler(
+        IIdentityService identityService, 
+        ILocalizationService localizer,
+        ILogger<RegisterUserCommandHandler> logger)
     {
         _identityService = identityService;
+        _localizer = localizer;
+        _logger = logger;
     }
 
     public async Task<Result<RegisterResult>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Processing Register Command for Email: {Email}", request.Email);
         // 1. Create User and Profile via IdentityService
         var result = await _identityService.CreateUserAsync(
             request.UserName,
@@ -37,11 +46,8 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
             return Result<RegisterResult>.Failure(result.Errors);
         }
 
-        // 2. Prepare Response (Token generation will be added in the next phase)
-        var response = new RegisterResult(
-            result.Data,
-            request.Email,
-            "JWT_ACCESS_TOKEN_PLACEHOLDER");
+        // 2. Prepare Response
+        var response = new RegisterResult(_localizer["RegistrationSuccessful"]);
 
         return Result<RegisterResult>.Success(response);
     }

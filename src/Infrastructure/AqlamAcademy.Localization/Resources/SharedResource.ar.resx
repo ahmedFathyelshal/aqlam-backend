@@ -156,4 +156,7 @@
   <data name="PasswordsDoNotMatch" xml:space="preserve">
     <value>كلمتا المرور غير متطابقتين.</value>
   </data>
+  <data name="RegistrationSuccessful" xml:space="preserve">
+    <value>تم تسجيل المستخدم بنجاح. الرجاء تسجيل الدخول للمتابعة.</value>
+  </data>
 </root>

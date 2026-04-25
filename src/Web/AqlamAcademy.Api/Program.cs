@@ -1,7 +1,8 @@
 using AqlamAcademy.Api.Infrastructure;
 using AqlamAcademy.Api.Infrastructure.DependencyInjection;
-using AqlamAcademy.Application;
 using AqlamAcademy.Api.Infrastructure.Extensions;
+using AqlamAcademy.Api.Infrastructure.Middlewares;
+using AqlamAcademy.Application;
 using AqlamAcademy.Infrastructure.Persistence;
 using Scalar.AspNetCore;
 using Serilog;
@@ -14,6 +15,9 @@ Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .WriteTo.Console()
+    .WriteTo.File("Logs/aqlam-events-.log", 
+        rollingInterval: RollingInterval.Day,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {CorrelationId} {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -54,6 +58,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UsePresentation();
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();

@@ -2,6 +2,6 @@ namespace AqlamAcademy.Api.Contracts.Auth;
 
 public class LoginResponse
 {
-    public string Token { get; set; } = string.Empty;
-    public DateTime Expiration { get; set; }
+    public string AccessToken { get; set; } = string.Empty;
+    public DateTime AccessTokenExpiration { get; set; }
 }

@@ -20,6 +20,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<StudentProfile> StudentProfiles => Set<StudentProfile>();
     public DbSet<AssistantProfile> AssistantProfiles => Set<AssistantProfile>();
     public DbSet<TeacherAssistant> TeacherAssistants => Set<TeacherAssistant>();
+    public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
