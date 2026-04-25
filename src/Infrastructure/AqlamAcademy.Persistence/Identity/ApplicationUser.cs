@@ -18,4 +18,7 @@ public class ApplicationUser : IdentityUser<Guid>, ISoftDelete
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAtUtc { get; set; }
     public string? DeletedBy { get; set; }
+
+    // Relationships
+    public virtual ICollection<UserRefreshToken> RefreshTokens { get; set; } = new List<UserRefreshToken>();
 }

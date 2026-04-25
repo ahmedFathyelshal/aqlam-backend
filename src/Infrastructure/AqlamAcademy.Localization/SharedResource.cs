@@ -21,4 +21,5 @@ public class SharedResource
     public const string UserAccountDeleted = "UserAccountDeleted";
     public const string UserAccountLocked = "UserAccountLocked";
     public const string PasswordsDoNotMatch = "PasswordsDoNotMatch";
+    public const string RegistrationSuccessful = "RegistrationSuccessful";
 }

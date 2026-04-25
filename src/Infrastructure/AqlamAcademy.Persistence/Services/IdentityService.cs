@@ -14,20 +14,20 @@ public class IdentityService : IIdentityService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<IdentityService> _logger;
-    private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly ITokenService _tokenService;
     private readonly ILocalizationService _localizer;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager,
         ApplicationDbContext context,
         ILogger<IdentityService> logger,
-        IJwtTokenGenerator jwtTokenGenerator,
+        ITokenService tokenService,
         ILocalizationService localizer)
     {
         _userManager = userManager;
         _context = context;
         _logger = logger;
-        _jwtTokenGenerator = jwtTokenGenerator;
+        _tokenService = tokenService;
         _localizer = localizer;
     }
 
@@ -36,7 +36,7 @@ public class IdentityService : IIdentityService
         return await _userManager.FindByNameAsync(userName) == null;
     }
 
-    public async Task<Result<AuthTokens>> LoginAsync(string userName, string password)
+    public async Task<Result<AuthTokens>> LoginAsync(string userName, string password, string? ipAddress, string? userAgent, string? deviceId)
     {
         var user = await _userManager.FindByNameAsync(userName);
         
@@ -64,14 +64,19 @@ public class IdentityService : IIdentityService
 
         var roles = await _userManager.GetRolesAsync(user);
 
-        var token = _jwtTokenGenerator.GenerateToken(
-            user.Id, 
-            user.UserName!, 
-            user.Email ?? string.Empty, 
+        var tokens = await _tokenService.GenerateAccessAndRefreshTokensAsync(
+            user, 
             roles, 
-            out var expiration);
+            ipAddress, 
+            userAgent,
+            deviceId);
 
-        return Result<AuthTokens>.Success(new AuthTokens(token, expiration));
+        return Result<AuthTokens>.Success(tokens);
+    }
+
+    public async Task<Result<AuthTokens>> RefreshSessionAsync(string refreshToken, string? ipAddress, string? userAgent, string? deviceId)
+    {
+        return await _tokenService.RefreshSessionAsync(refreshToken, ipAddress, userAgent, deviceId);
     }
 
     public async Task<Result<Guid>> CreateUserAsync(

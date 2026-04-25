@@ -156,4 +156,7 @@
   <data name="PasswordsDoNotMatch" xml:space="preserve">
     <value>Passwords do not match.</value>
   </data>
+  <data name="RegistrationSuccessful" xml:space="preserve">
+    <value>User has been registered successfully. Please login to continue.</value>
+  </data>
 </root>
