@@ -42,12 +42,11 @@ public static class DependencyInjection
         // 2. ASP.NET Identity
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {
-            options.Password.RequireDigit = true;
-            options.Password.RequiredLength = 8;
-            options.Password.RequireNonAlphanumeric = true;
-            options.Password.RequireUppercase = true;
-            options.Password.RequireLowercase = true;
-
+            options.Password.RequireDigit = false;
+            options.Password.RequiredLength = 6;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequireLowercase = false;
             options.User.RequireUniqueEmail = false;
         })
         .AddEntityFrameworkStores<ApplicationDbContext>()

@@ -78,7 +78,6 @@ public class IdentityService : IIdentityService
         string userName, 
         string email,
         string password, 
-        string fullName, 
         UserType userType)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
@@ -89,7 +88,7 @@ public class IdentityService : IIdentityService
             {
                 UserName = userName,
                 Email = email,
-                FullName = fullName,
+                FullName = string.Empty, // Default value as it's no longer collected at registration
                 EmailConfirmed = true 
             };
 

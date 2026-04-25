@@ -10,7 +10,6 @@ public interface IIdentityService
         string userName,
         string email,
         string password, 
-        string fullName, 
         UserType userType);
         
     Task<bool> IsUserNameUniqueAsync(string userName);

@@ -14,4 +14,5 @@ public static class ValidationMessages
     public const string FullNameRequired = "FullNameRequired";
     public const string FullNameTooLong = "FullNameTooLong";
     public const string InvalidUserType = "InvalidUserType";
+    public const string PasswordsDoNotMatch = "PasswordsDoNotMatch";
 }

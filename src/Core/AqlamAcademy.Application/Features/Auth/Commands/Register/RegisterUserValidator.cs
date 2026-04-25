@@ -19,15 +19,15 @@ public class RegisterUserValidator : AbstractValidator<RegisterUserCommand>
             .MustAsync(BeUniqueUserName).WithMessage(localizer[ValidationMessages.UserNameAlreadyInUse]);
 
         RuleFor(v => v.Email)
-            .EmailAddress().WithMessage(localizer[ValidationMessages.InvalidEmail]);
+            .EmailAddress().WithMessage(localizer[ValidationMessages.InvalidEmail])
+            .When(v => !string.IsNullOrEmpty(v.Email));
 
         RuleFor(v => v.Password)
             .NotEmpty().WithMessage(localizer[ValidationMessages.PasswordRequired])
             .MinimumLength(8).WithMessage(localizer[ValidationMessages.PasswordTooShort]);
 
-        RuleFor(v => v.FullName)
-            .NotEmpty().WithMessage(localizer[ValidationMessages.FullNameRequired])
-            .MaximumLength(100).WithMessage(localizer[ValidationMessages.FullNameTooLong]);
+        RuleFor(v => v.ConfirmPassword)
+            .Equal(v => v.Password).WithMessage(localizer[ValidationMessages.PasswordsDoNotMatch]);
 
         RuleFor(v => v.UserType)
             .IsInEnum().WithMessage(localizer[ValidationMessages.InvalidUserType]);

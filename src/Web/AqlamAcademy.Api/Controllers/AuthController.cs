@@ -30,7 +30,11 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result);
 
-        return Ok(result);
+        var response = _mapper.Map<RegisterResponse>(result.Data!);
+
+        var finalResult = Result<RegisterResponse>.Success(response);
+
+        return Ok(finalResult);
     }
 
     [HttpPost("login")]
