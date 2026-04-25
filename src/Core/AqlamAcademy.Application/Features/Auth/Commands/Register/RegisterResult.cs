@@ -1,7 +1,6 @@
 namespace AqlamAcademy.Application.Features.Auth.Commands.Register;
 
-public record RegisterResponse(
+public record RegisterResult(
     Guid Id,
     string Email,
-    string FullName,
     string Token);

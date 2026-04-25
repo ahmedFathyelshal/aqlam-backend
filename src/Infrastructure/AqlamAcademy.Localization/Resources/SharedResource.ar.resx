@@ -153,4 +153,7 @@
   <data name="UserNameRequired" xml:space="preserve">
     <value>اسم المستخدم مطلوب.</value>
   </data>
+  <data name="PasswordsDoNotMatch" xml:space="preserve">
+    <value>كلمتا المرور غير متطابقتين.</value>
+  </data>
 </root>
