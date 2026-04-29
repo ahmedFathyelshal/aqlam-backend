@@ -17,6 +17,8 @@ namespace AqlamAcademy.Api.Infrastructure.DependencyInjection;
 
 public static class PresentationDependencyInjection
 {
+    private const string CorsPolicy = "AqlamCorsPolicy";
+
     public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration)
     {
         // 1. Localization
@@ -53,6 +55,19 @@ public static class PresentationDependencyInjection
             };
         });
 
+        // 4. CORS
+        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+        services.AddCors(options =>
+        {
+            options.AddPolicy(CorsPolicy, builder =>
+            {
+                builder.WithOrigins(allowedOrigins)
+                       .AllowAnyHeader()
+                       .AllowAnyMethod()
+                       .AllowCredentials();
+            });
+        });
+
         return services;
     }
 
@@ -72,7 +87,10 @@ public static class PresentationDependencyInjection
             SupportedUICultures = supportedCultures
         });
 
-        // 5. Authentication & Authorization Middleware
+        // 5. CORS Middleware
+        app.UseCors(CorsPolicy);
+
+        // 6. Authentication & Authorization Middleware
         app.UseAuthentication();
         app.UseAuthorization();
 
