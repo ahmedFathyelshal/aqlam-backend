@@ -17,4 +17,6 @@ public interface ITokenService
         string? ipAddress, 
         string? userAgent,
         string? deviceId);
+
+    Task<Result<bool>> RevokeTokenAsync(string refreshToken, string? ipAddress, string? deviceId);
 }

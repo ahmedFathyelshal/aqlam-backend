@@ -6,6 +6,7 @@ using AqlamAcademy.Application.Features.Auth.Commands.Register;
 using AqlamAcademy.Application.Features.Auth.Commands.Login;
 using AqlamAcademy.Application.Features.Auth.Commands.Refresh;
 using AqlamAcademy.Application.Common.Models;
+using AqlamAcademy.Application.Features.Auth.Commands.Logout;
 
 namespace AqlamAcademy.Api.Controllers;
 
@@ -120,6 +121,46 @@ public class AuthController : ControllerBase
         SetTokenCookie(result.Data!.RefreshToken, result.Data.RefreshTokenExpiration);
 
         var finalResult = Result<LoginResponse>.Success(response);
+
+        return Ok(finalResult);
+    }
+
+    [HttpPost("logout")]
+    public async Task<ActionResult<Result<bool>>> Logout([FromBody] LogoutRequest request)
+    {
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        _logger.LogInformation("Received logout request from IP: {IpAddress}, DeviceId: {DeviceId}", ipAddress, request.DeviceId);
+
+        var refreshToken = Request.Cookies["refreshToken"];
+        
+        if (string.IsNullOrEmpty(refreshToken))
+        {
+            _logger.LogInformation("Logout attempted but no token cookie found for IP: {IpAddress}", ipAddress);
+            // We consider this a success from the client's perspective as they are already "logged out"
+            return Ok(Result<bool>.Success(true));
+        }
+
+        var command = new LogoutUserCommand(
+            refreshToken, 
+            ipAddress,
+            request.DeviceId);
+
+        var result = await _mediator.Send(command);
+
+        if (!result.Succeeded)
+        {
+            _logger.LogWarning("Logout session failed. IP: {IpAddress}. Errors: {@Errors}", ipAddress, result.Errors);
+            // Even if revocation fails on DB side, clear the cookie
+            Response.Cookies.Delete("refreshToken");
+            return BadRequest(result);
+        }
+
+        _logger.LogInformation("Logout session successful. IP: {IpAddress}", ipAddress);
+
+        // Delete the cookie
+        Response.Cookies.Delete("refreshToken");
+
+        var finalResult = Result<bool>.Success(true);
 
         return Ok(finalResult);
     }

@@ -176,6 +176,33 @@ public class TokenService : ITokenService
         }
     }
 
+    public async Task<Result<bool>> RevokeTokenAsync(string refreshToken, string? ipAddress, string? deviceId)
+    {
+        var tokenHash = HashToken(refreshToken);
+
+        var storedToken = await _context.UserRefreshTokens
+            .FirstOrDefaultAsync(r => r.TokenHash == tokenHash);
+
+        if (storedToken == null)
+        {
+            _logger.LogWarning("Revoke attempted with unknown token from IP {IP}. DeviceId: {DeviceId}", ipAddress, deviceId);
+            return Result<bool>.Failure(new[] { "Invalid token." });
+        }
+
+        if (storedToken.Status == TokenStatus.Active)
+        {
+            storedToken.Status = TokenStatus.Revoked;
+            storedToken.ReasonRevoked = "Logged out by user.";
+            _context.Entry(storedToken).State = EntityState.Modified;
+            
+            await _context.SaveChangesAsync();
+            
+            _logger.LogInformation("Token {TokenId} successfully revoked from IP {IP}. DeviceId: {DeviceId}", storedToken.Id, ipAddress, deviceId);
+        }
+
+        return Result<bool>.Success(true);
+    }
+
     private async Task EnforceDeviceLimitAsync(Guid userId, string? ipAddress, string? newDeviceId)
     {
         var activeTokens = await _context.UserRefreshTokens

@@ -79,6 +79,11 @@ public class IdentityService : IIdentityService
         return await _tokenService.RefreshSessionAsync(refreshToken, ipAddress, userAgent, deviceId);
     }
 
+    public async Task<Result<bool>> LogoutAsync(string refreshToken, string? ipAddress, string? deviceId)
+    {
+        return await _tokenService.RevokeTokenAsync(refreshToken, ipAddress, deviceId);
+    }
+
     public async Task<Result<Guid>> CreateUserAsync(
         string userName, 
         string email,
