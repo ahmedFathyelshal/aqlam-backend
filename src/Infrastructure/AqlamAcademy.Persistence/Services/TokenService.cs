@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,7 +17,6 @@ public class TokenService : ITokenService
     private readonly JwtSettings _jwtSettings;
     private readonly ILogger<TokenService> _logger;
     private const int MaxDevicesAllowed = 2;
-    private readonly RSA _rsa;
 
     public TokenService(
         ApplicationDbContext context, 
@@ -26,16 +26,6 @@ public class TokenService : ITokenService
         _context = context;
         _jwtSettings = jwtSettings.Value;
         _logger = logger;
-        
-        // Load the RSA key dynamically for RS256
-        _rsa = RSA.Create();
-        // Here we ideally load the key from configuration/Azure KeyVault:
-        // In this implementation, if no actual private key is provided via setup, 
-        // a fallback or dummy string parsing would happen. For safety, generating new if nothing is passed initially:
-        if (string.IsNullOrEmpty(_jwtSettings.Secret))
-        {
-             _rsa.KeySize = 2048; // For ephemeral testing only. Replace with actual key config.
-        }
     }
 
     public async Task<AuthTokens> GenerateAccessAndRefreshTokensAsync(
@@ -62,7 +52,7 @@ public class TokenService : ITokenService
                 UserId = user.Id,
                 TokenHash = refreshTokenHash,
                 Status = TokenStatus.Active,
-                ExpiresAt = DateTime.UtcNow.AddDays(7), // Hardcoded 7 days for Refresh Token in this example
+                ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays),
                 CreatedByIp = ipAddress,
                 UserAgent = userAgent,
                 DeviceId = deviceId
@@ -144,7 +134,7 @@ public class TokenService : ITokenService
                 UserId = storedToken.UserId,
                 TokenHash = newRefreshTokenHash,
                 Status = TokenStatus.Active,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays),
                 CreatedByIp = ipAddress,
                 UserAgent = userAgent,
                 DeviceId = deviceId,
@@ -174,6 +164,33 @@ public class TokenService : ITokenService
             _logger.LogError(ex, "Error refreshing token for IP {IP}", ipAddress);
             throw;
         }
+    }
+
+    public async Task<Result<bool>> RevokeTokenAsync(string refreshToken, string? ipAddress, string? deviceId)
+    {
+        var tokenHash = HashToken(refreshToken);
+
+        var storedToken = await _context.UserRefreshTokens
+            .FirstOrDefaultAsync(r => r.TokenHash == tokenHash);
+
+        if (storedToken == null)
+        {
+            _logger.LogWarning("Revoke attempted with unknown token from IP {IP}. DeviceId: {DeviceId}", ipAddress, deviceId);
+            return Result<bool>.Failure(new[] { "Invalid token." });
+        }
+
+        if (storedToken.Status == TokenStatus.Active)
+        {
+            storedToken.Status = TokenStatus.Revoked;
+            storedToken.ReasonRevoked = "Logged out by user.";
+            _context.Entry(storedToken).State = EntityState.Modified;
+            
+            await _context.SaveChangesAsync();
+            
+            _logger.LogInformation("Token {TokenId} successfully revoked from IP {IP}. DeviceId: {DeviceId}", storedToken.Id, ipAddress, deviceId);
+        }
+
+        return Result<bool>.Success(true);
     }
 
     private async Task EnforceDeviceLimitAsync(Guid userId, string? ipAddress, string? newDeviceId)
@@ -228,9 +245,9 @@ public class TokenService : ITokenService
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        var key = new RsaSecurityKey(_rsa);
-        var creds = new SigningCredentials(key, SecurityAlgorithms.RsaSha256);
-        DateTime expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationInMinutes);
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        DateTime expires = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
 
         var token = new JwtSecurityToken(
             issuer: _jwtSettings.Issuer,
