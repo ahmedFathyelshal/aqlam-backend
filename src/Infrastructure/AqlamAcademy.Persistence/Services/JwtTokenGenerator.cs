@@ -34,7 +34,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        expiration = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationInMinutes);
+        expiration = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {

@@ -75,8 +75,9 @@ public class AuthController : ControllerBase
 
         var response = _mapper.Map<LoginResponse>(result.Data!);
 
-        // Securely append the Refresh Token inside the HTTP-Only cookie, restricting XSS access.
-        SetTokenCookie(result.Data!.RefreshToken, result.Data.RefreshTokenExpiration);
+        // Securely append the tokens inside HTTP-Only cookies, restricting XSS access.
+        SetTokenCookie("accessToken", result.Data!.AccessToken, result.Data.AccessTokenExpiration);
+        SetTokenCookie("refreshToken", result.Data!.RefreshToken, result.Data.RefreshTokenExpiration);
 
         var finalResult = Result<LoginResponse>.Success(response);
 
@@ -117,8 +118,9 @@ public class AuthController : ControllerBase
 
         var response = _mapper.Map<LoginResponse>(result.Data!);
 
-        // Securely rotate the Refresh Token inside the HTTP-Only cookie
-        SetTokenCookie(result.Data!.RefreshToken, result.Data.RefreshTokenExpiration);
+        // Securely rotate the tokens inside HTTP-Only cookies
+        SetTokenCookie("accessToken", result.Data!.AccessToken, result.Data.AccessTokenExpiration);
+        SetTokenCookie("refreshToken", result.Data!.RefreshToken, result.Data.RefreshTokenExpiration);
 
         var finalResult = Result<LoginResponse>.Success(response);
 
@@ -150,14 +152,16 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
         {
             _logger.LogWarning("Logout session failed. IP: {IpAddress}. Errors: {@Errors}", ipAddress, result.Errors);
-            // Even if revocation fails on DB side, clear the cookie
+            // Even if revocation fails on DB side, clear the cookies
+            Response.Cookies.Delete("accessToken");
             Response.Cookies.Delete("refreshToken");
             return BadRequest(result);
         }
 
         _logger.LogInformation("Logout session successful. IP: {IpAddress}", ipAddress);
 
-        // Delete the cookie
+        // Delete the cookies
+        Response.Cookies.Delete("accessToken");
         Response.Cookies.Delete("refreshToken");
 
         var finalResult = Result<bool>.Success(true);
@@ -165,15 +169,43 @@ public class AuthController : ControllerBase
         return Ok(finalResult);
     }
 
-    private void SetTokenCookie(string token, DateTime expires)
+    private void SetTokenCookie(string cookieName, string token, DateTime expires)
     {
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
             Expires = expires,
-            Secure = true, // Must be true in production (requires HTTPS)
-            SameSite = SameSiteMode.Strict
+            Secure = true, // Must be true in production (requires HTTPS), and required when SameSite is None
+            SameSite = SameSiteMode.None,
+            Path = "/"
         };
-        Response.Cookies.Append("refreshToken", token, cookieOptions);
+        Response.Cookies.Append(cookieName, token, cookieOptions);
+    }
+
+    [HttpGet("me")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public IActionResult GetCurrentUser()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? 
+                     User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? 
+                    User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email)?.Value;
+
+        var name = User.Identity?.Name ?? 
+                   User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Name)?.Value;
+
+        var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(r => r.Value).ToList();
+
+        // Returning a structure that the frontend expects to hydrate the user profile
+        return Ok(Result<object>.Success(new
+        {
+            id = userId,
+            name = name ?? "User",
+            email = email,
+            roles = roles,
+            avatar = "assets/images/avatars/brian-hughes.jpg", // Mock avatar for now
+            status = "online"
+        }));
     }
 }
