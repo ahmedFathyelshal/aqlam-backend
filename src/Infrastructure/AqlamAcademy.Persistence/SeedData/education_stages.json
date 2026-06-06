@@ -1,0 +1,23 @@
+[
+  {
+    "Id": 1,
+    "NameEn": "Primary",
+    "NameAr": "الابتدائية",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 2,
+    "NameEn": "Middle",
+    "NameAr": "الإعدادية",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 3,
+    "NameEn": "High School",
+    "NameAr": "الثانوية",
+    "OrderIndex": 3,
+    "IsActive": true
+  }
+]
