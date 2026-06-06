@@ -7,6 +7,7 @@ using AqlamAcademy.Infrastructure.Persistence.Identity;
 using AqlamAcademy.Domain.Students;
 using AqlamAcademy.Domain.Staff;
 using AqlamAcademy.Domain.Common;
+using AqlamAcademy.Domain.Lookups;
 
 namespace AqlamAcademy.Infrastructure.Persistence;
 
@@ -21,6 +22,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<AssistantProfile> AssistantProfiles => Set<AssistantProfile>();
     public DbSet<TeacherAssistant> TeacherAssistants => Set<TeacherAssistant>();
     public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
+
+    public DbSet<EducationStage> EducationStages => Set<EducationStage>();
+    public DbSet<EducationGrade> EducationGrades => Set<EducationGrade>();
+    public DbSet<Subject> Subjects => Set<Subject>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
