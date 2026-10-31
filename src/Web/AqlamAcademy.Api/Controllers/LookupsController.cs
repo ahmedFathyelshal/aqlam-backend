@@ -41,4 +41,13 @@ public class LookupsController : ControllerBase
         
         return Ok(result);
     }
+
+    [HttpGet("course-states")]
+    public async Task<IActionResult> GetCourseStates(CancellationToken cancellationToken)
+    {
+        var query = new GetCourseStatesQuery();
+        var result = await _mediator.Send(query, cancellationToken);
+        
+        return Ok(result);
+    }
 }

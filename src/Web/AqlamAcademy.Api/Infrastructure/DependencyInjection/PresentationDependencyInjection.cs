@@ -6,12 +6,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
 using System.Reflection;
-using System.Text;
+using System.Security.Cryptography;
 using Mapster;
 using MapsterMapper;
 using AqlamAcademy.Application.Common.Interfaces;
 using AqlamAcademy.Infrastructure.Persistence;
 using AqlamAcademy.Localization;
+using AqlamAcademy.Api.Infrastructure;
 
 namespace AqlamAcademy.Api.Infrastructure.DependencyInjection;
 
@@ -24,6 +25,10 @@ public static class PresentationDependencyInjection
         // 1. Localization
         services.AddLocalization(options => options.ResourcesPath = "Resources");
         services.AddScoped<ILocalizationService, LocalizationService>();
+
+        // 2. Current User Service
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         // 2. Mapster
         var mapsterConfig = TypeAdapterConfig.GlobalSettings;
@@ -42,6 +47,10 @@ public static class PresentationDependencyInjection
         })
         .AddJwtBearer(options =>
         {
+            var rsa = RSA.Create();
+            rsa.FromXmlString(jwtSettings.Rsa.PublicKeyXml);
+            var publicKey = new RsaSecurityKey(rsa);
+
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
@@ -50,8 +59,7 @@ public static class PresentationDependencyInjection
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = jwtSettings.Issuer,
                 ValidAudience = jwtSettings.Audience,
-                IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(jwtSettings.Secret))
+                IssuerSigningKey = publicKey
             };
 
             options.Events = new JwtBearerEvents
@@ -109,4 +117,5 @@ public static class PresentationDependencyInjection
         return app;
     }
 }
+
 

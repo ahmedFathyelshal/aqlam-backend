@@ -2,13 +2,15 @@ using AqlamAcademy.Domain.Lookups;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using AqlamAcademy.Infrastructure.Persistence.Constants;
+
 namespace AqlamAcademy.Infrastructure.Persistence.Configurations;
 
 public class EducationStageConfiguration : IEntityTypeConfiguration<EducationStage>
 {
     public void Configure(EntityTypeBuilder<EducationStage> builder)
     {
-        builder.ToTable("EducationStages");
+        builder.ToTable("EducationStages", SchemaNames.Lookups);
 
         builder.HasKey(x => x.Id);
         

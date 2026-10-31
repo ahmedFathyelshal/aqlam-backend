@@ -1,0 +1,95 @@
+using AqlamAcademy.Application.Features.Teacher.Courses.Commands;
+using AqlamAcademy.Application.Features.Teacher.Courses.Queries;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace AqlamAcademy.Api.Controllers.Teacher;
+
+[Route("api/teacher/[controller]")]
+[ApiController]
+// [Authorize(Roles = "Teacher")] // Uncomment when Identity is fully wired in the frontend
+public class CoursesController : ControllerBase
+{
+    private readonly IMediator _mediator;
+
+    public CoursesController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
+    [HttpPost("draft")]
+    public async Task<IActionResult> InitializeDraft([FromBody] InitializeCourseDraftCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(command, cancellationToken);
+        
+        if (result.Succeeded)
+            return Ok(result);
+            
+        return BadRequest(result);
+    }
+
+    [HttpGet("{id}/draft")]
+    public async Task<IActionResult> GetDraft(Guid id, CancellationToken cancellationToken)
+    {
+        var query = new GetCourseDraftQuery(id);
+        var result = await _mediator.Send(query, cancellationToken);
+        
+        if (result.Succeeded)
+            return Ok(result);
+            
+        return NotFound(result);
+    }
+
+    [HttpPut("{id}/identity")]
+    public async Task<IActionResult> UpdateIdentity(Guid id, [FromBody] UpdateCourseIdentityCommand command, CancellationToken cancellationToken)
+    {
+        if (id != command.Id) return BadRequest();
+
+        var result = await _mediator.Send(command, cancellationToken);
+        
+        if (result.Succeeded)
+            return Ok(result);
+            
+        return BadRequest(result);
+    }
+
+    [HttpPut("{id}/commercials")]
+    public async Task<IActionResult> UpdateCommercials(Guid id, [FromBody] UpdateCourseCommercialsCommand command, CancellationToken cancellationToken)
+    {
+        if (id != command.Id) return BadRequest();
+
+        var result = await _mediator.Send(command, cancellationToken);
+        
+        if (result.Succeeded)
+            return Ok(result);
+            
+        return BadRequest(result);
+    }
+
+    [HttpPut("{id}/media")]
+    public async Task<IActionResult> UpdateMedia(Guid id, [FromBody] UpdateCourseMediaCommand command, CancellationToken cancellationToken)
+    {
+        if (id != command.Id) return BadRequest();
+
+        var result = await _mediator.Send(command, cancellationToken);
+        
+        if (result.Succeeded)
+            return Ok(result);
+            
+        return BadRequest(result);
+    }
+
+    [HttpPut("{id}/curriculum")]
+    public async Task<IActionResult> UpdateCurriculum(Guid id, [FromBody] UpdateCourseCurriculumCommand command, CancellationToken cancellationToken)
+    {
+        if (id != command.Id) return BadRequest();
+
+        var result = await _mediator.Send(command, cancellationToken);
+        
+        if (result.Succeeded)
+            return Ok(result);
+            
+        return BadRequest(result);
+    }
+}

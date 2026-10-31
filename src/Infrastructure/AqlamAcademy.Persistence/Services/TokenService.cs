@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,16 +17,19 @@ public class TokenService : ITokenService
     private readonly ApplicationDbContext _context;
     private readonly JwtSettings _jwtSettings;
     private readonly ILogger<TokenService> _logger;
+    private readonly UserManager<ApplicationUser> _userManager;
     private const int MaxDevicesAllowed = 2;
 
     public TokenService(
         ApplicationDbContext context, 
         IOptions<JwtSettings> jwtSettings,
-        ILogger<TokenService> logger)
+        ILogger<TokenService> logger,
+        UserManager<ApplicationUser> userManager)
     {
         _context = context;
         _jwtSettings = jwtSettings.Value;
         _logger = logger;
+        _userManager = userManager;
     }
 
     public async Task<AuthTokens> GenerateAccessAndRefreshTokensAsync(
@@ -143,9 +147,8 @@ public class TokenService : ITokenService
 
             _context.UserRefreshTokens.Add(newRefreshToken);
 
-            // Access Token rotation
-            IList<string> dummyRoles = new List<string>(); // Normally fetch actual roles
-            var accessResult = GenerateAccessToken(storedToken.User, dummyRoles);
+            var roles = await _userManager.GetRolesAsync(storedToken.User);
+            var accessResult = GenerateAccessToken(storedToken.User, roles);
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -245,8 +248,15 @@ public class TokenService : ITokenService
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        using var rsa = RSA.Create();
+        rsa.FromXmlString(_jwtSettings.Rsa.PrivateKeyXml);
+        var privateKey = new RsaSecurityKey(rsa);
+                // IMPORTANT: Prevent the framework from caching the SignatureProvider globally.
+        // If it caches it, subsequent requests will try to use this RSA instance after it has been disposed.
+        var creds = new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256)
+        {
+            CryptoProviderFactory = new CryptoProviderFactory { CacheSignatureProviders = false }
+        };
         DateTime expires = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
 
         var token = new JwtSecurityToken(
@@ -276,3 +286,4 @@ public class TokenService : ITokenService
         return Convert.ToBase64String(hash);
     }
 }
+

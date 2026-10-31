@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+
 using System.Linq.Expressions;
 using System.Reflection;
 using AqlamAcademy.Infrastructure.Persistence.Identity;
@@ -23,9 +24,17 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<TeacherAssistant> TeacherAssistants => Set<TeacherAssistant>();
     public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
 
+    // Lookups
     public DbSet<EducationStage> EducationStages => Set<EducationStage>();
     public DbSet<EducationGrade> EducationGrades => Set<EducationGrade>();
     public DbSet<Subject> Subjects => Set<Subject>();
+    public DbSet<AqlamAcademy.Domain.Lookups.CourseState> CourseStates => Set<AqlamAcademy.Domain.Lookups.CourseState>();
+
+    // Courses
+    public DbSet<AqlamAcademy.Domain.Courses.Course> Courses => Set<AqlamAcademy.Domain.Courses.Course>();
+    public DbSet<AqlamAcademy.Domain.Courses.CourseChapter> CourseChapters => Set<AqlamAcademy.Domain.Courses.CourseChapter>();
+    public DbSet<AqlamAcademy.Domain.Courses.CourseLesson> CourseLessons => Set<AqlamAcademy.Domain.Courses.CourseLesson>();
+    public DbSet<AqlamAcademy.Domain.Courses.LessonResource> LessonResources => Set<AqlamAcademy.Domain.Courses.LessonResource>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -71,3 +80,4 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
         return base.SaveChangesAsync(cancellationToken);
     }
 }
+
