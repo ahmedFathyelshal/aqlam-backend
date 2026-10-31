@@ -57,11 +57,13 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UsePresentation();
+// Correlation id and exception handling run first so every later log line
+// (including auth failures) carries the correlation id and errors are shaped consistently.
 app.UseMiddleware<CorrelationIdMiddleware>();
-app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
+app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
+app.UsePresentation();
 app.MapControllers();
 
 
@@ -81,3 +83,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Exposed so integration tests can host the API with WebApplicationFactory<Program>.
+public partial class Program;

@@ -19,6 +19,7 @@ public class TokenService : ITokenService
     private readonly ILogger<TokenService> _logger;
     private readonly UserManager<ApplicationUser> _userManager;
     private const int MaxDevicesAllowed = 2;
+    private const int ConcurrentRefreshGraceSeconds = 30;
 
     public TokenService(
         ApplicationDbContext context, 
@@ -67,10 +68,11 @@ public class TokenService : ITokenService
             await transaction.CommitAsync();
 
             return new AuthTokens(
-                accessTokenResult.Token, 
-                accessTokenResult.Expiration, 
+                accessTokenResult.Token,
+                accessTokenResult.Expiration,
                 refreshTokenString, // Send raw token down to controller
-                refreshToken.ExpiresAt);
+                refreshToken.ExpiresAt,
+                ToAuthUser(user, roles));
         }
         catch (Exception ex)
         {
@@ -95,7 +97,24 @@ public class TokenService : ITokenService
             if (storedToken == null)
             {
                 _logger.LogWarning("Refresh attempted with unknown token from IP {IP}", ipAddress);
-                return Result<AuthTokens>.Failure(new[] { "Invalid token." });
+                return Result<AuthTokens>.Unauthorized("Invalid token.");
+            }
+
+            // --- CONCURRENT REFRESH GRACE WINDOW ---
+            // Two browser tabs can send the same refresh cookie at the same moment. If this token was
+            // rotated only seconds ago, the other tab already holds the new cookie: tell the caller to
+            // retry its request instead of treating it as a replay attack and killing the session.
+            if (storedToken.Status == TokenStatus.Consumed)
+            {
+                var graceStart = DateTime.UtcNow.AddSeconds(-ConcurrentRefreshGraceSeconds);
+                var rotatedJustNow = await _context.UserRefreshTokens
+                    .AnyAsync(t => t.ReplacedByTokenId == storedToken.Id && t.CreatedAt >= graceStart);
+
+                if (rotatedJustNow)
+                {
+                    _logger.LogInformation("Concurrent refresh for token {TokenId} within grace window.", storedToken.Id);
+                    return Result<AuthTokens>.Conflict("Session was refreshed by another request. Retry.");
+                }
             }
 
             // --- REPLAY ATTACK DETECTION ---
@@ -116,12 +135,12 @@ public class TokenService : ITokenService
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 
-                return Result<AuthTokens>.Failure(new[] { "Critical security vulnerability intercepted. Session chain terminated." });
+                return Result<AuthTokens>.Failure(ResultErrorType.Forbidden, "Critical security vulnerability intercepted. Session chain terminated.");
             }
 
             if (storedToken.Status != TokenStatus.Active || storedToken.ExpiresAt < DateTime.UtcNow)
             {
-                return Result<AuthTokens>.Failure(new[] { "Token is expired or no longer active." });
+                return Result<AuthTokens>.Unauthorized("Token is expired or no longer active.");
             }
 
             // Token is good. Rotate it (RTR).
@@ -154,10 +173,11 @@ public class TokenService : ITokenService
             await transaction.CommitAsync();
 
             var finalTokens = new AuthTokens(
-                accessResult.Token, 
-                accessResult.Expiration, 
-                newRefreshTokenString, 
-                newRefreshToken.ExpiresAt);
+                accessResult.Token,
+                accessResult.Expiration,
+                newRefreshTokenString,
+                newRefreshToken.ExpiresAt,
+                ToAuthUser(storedToken.User, roles));
 
             return Result<AuthTokens>.Success(finalTokens);
         }
@@ -269,6 +289,9 @@ public class TokenService : ITokenService
 
         return (new JwtSecurityTokenHandler().WriteToken(token), expires);
     }
+
+    private static AuthUser ToAuthUser(ApplicationUser user, IList<string> roles) =>
+        new(user.Id, user.UserName ?? string.Empty, user.Email, user.FullName, roles.ToList());
 
     private string GenerateSecureRandomString(int length = 64)
     {

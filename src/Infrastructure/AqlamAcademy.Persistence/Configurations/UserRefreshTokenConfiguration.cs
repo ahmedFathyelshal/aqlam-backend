@@ -37,5 +37,10 @@ public class UserRefreshTokenConfiguration : IEntityTypeConfiguration<UserRefres
         builder.Property(rt => rt.TokenHash)
                .IsRequired()
                .HasMaxLength(256);
+
+        // Every refresh looks up by hash; device-limit checks scan a user's active tokens.
+        builder.HasIndex(rt => rt.TokenHash).IsUnique();
+        builder.HasIndex(rt => new { rt.UserId, rt.Status });
+        builder.HasIndex(rt => rt.ReplacedByTokenId);
     }
 }

@@ -10,18 +10,21 @@ public record UpdateCourseCurriculumCommand(Guid Id, string? SyllabusRequirement
 public class UpdateCourseCurriculumCommandHandler : IRequestHandler<UpdateCourseCurriculumCommand, Result<CourseDraftDto>>
 {
     private readonly ICourseService _courseService;
+    private readonly ICurrentUserService _currentUser;
 
-    public UpdateCourseCurriculumCommandHandler(ICourseService courseService)
+    public UpdateCourseCurriculumCommandHandler(ICourseService courseService, ICurrentUserService currentUser)
     {
         _courseService = courseService;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<CourseDraftDto>> Handle(UpdateCourseCurriculumCommand request, CancellationToken cancellationToken)
     {
         var course = await _courseService.GetCourseByIdAsync(request.Id, cancellationToken);
 
-        if (course == null)
-            return Result<CourseDraftDto>.Failure(new[] { "Course not found." });
+        // Ownership: a teacher may only modify their own courses. Return 404 (not 403) so ids are not confirmed.
+        if (course == null || course.TeacherId != _currentUser.UserId)
+            return Result<CourseDraftDto>.NotFound("Course not found.");
 
         await _courseService.UpdateCurriculumAsync(request.Id, request.SyllabusRequirements, request.Chapters, cancellationToken);
 
