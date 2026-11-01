@@ -20,7 +20,7 @@ public class MembershipService : IMembershipService
 
     public async Task<OrganizationRole> GetActiveRolesAsync(Guid userId, Guid organizationId, CancellationToken cancellationToken = default)
     {
-        return await _cache.GetOrCreateAsync($"membership:{userId}:{organizationId}", async entry =>
+        return await _cache.GetOrCreateAsync(CacheKey(userId, organizationId), async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = CacheDuration;
 
@@ -33,6 +33,10 @@ public class MembershipService : IMembershipService
                 .FirstOrDefaultAsync(cancellationToken);
         });
     }
+
+    public void Invalidate(Guid userId, Guid organizationId) => _cache.Remove(CacheKey(userId, organizationId));
+
+    private static string CacheKey(Guid userId, Guid organizationId) => $"membership:{userId}:{organizationId}";
 
     public async Task<IReadOnlyList<MembershipSummaryDto>> GetUserMembershipsAsync(Guid userId, CancellationToken cancellationToken = default)
     {

@@ -16,4 +16,7 @@ public interface IMembershipService
     Task<OrganizationRole> GetActiveRolesAsync(Guid userId, Guid organizationId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<MembershipSummaryDto>> GetUserMembershipsAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>Drops the cached roles after a membership changes.</summary>
+    void Invalidate(Guid userId, Guid organizationId);
 }

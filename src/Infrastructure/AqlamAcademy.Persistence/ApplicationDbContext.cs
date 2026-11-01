@@ -36,6 +36,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Organization> Organizations => Set<Organization>();
     public DbSet<OrganizationDomain> OrganizationDomains => Set<OrganizationDomain>();
     public DbSet<Membership> Memberships => Set<Membership>();
+    public DbSet<JoinCode> JoinCodes => Set<JoinCode>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

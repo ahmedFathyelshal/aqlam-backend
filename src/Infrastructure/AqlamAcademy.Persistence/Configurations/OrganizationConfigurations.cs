@@ -73,3 +73,21 @@ public class MembershipConfiguration : IEntityTypeConfiguration<Membership>
                .OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+public class JoinCodeConfiguration : IEntityTypeConfiguration<JoinCode>
+{
+    public void Configure(EntityTypeBuilder<JoinCode> builder)
+    {
+        builder.ToTable("JoinCodes", SchemaNames.Organizations);
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.Code).IsRequired().HasMaxLength(16);
+        builder.HasIndex(x => x.Code).IsUnique();
+        builder.Property(x => x.Role).HasConversion<int>();
+
+        builder.HasOne(x => x.Organization)
+               .WithMany()
+               .HasForeignKey(x => x.OrganizationId)
+               .OnDelete(DeleteBehavior.Cascade);
+    }
+}

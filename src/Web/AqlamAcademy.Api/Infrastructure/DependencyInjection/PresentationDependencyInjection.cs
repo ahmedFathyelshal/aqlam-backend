@@ -37,6 +37,7 @@ public static class PresentationDependencyInjection
         // 2. Current User Service
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<ICurrentOrganization, CurrentOrganization>();
 
         // 2. Mapster
         var mapsterConfig = TypeAdapterConfig.GlobalSettings;
