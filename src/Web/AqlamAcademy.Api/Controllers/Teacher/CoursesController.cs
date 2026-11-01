@@ -154,6 +154,21 @@ public class CoursesController : ControllerBase
         return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
     }
 
+    /// <summary>Quiz settings and questions of a Quiz lesson.</summary>
+    [HttpGet("{id}/lessons/{lessonId:guid}/quiz")]
+    public async Task<IActionResult> GetQuiz(Guid id, Guid lessonId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new AqlamAcademy.Application.Features.Assessments.GetQuizQuery(id, lessonId), cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
+    [HttpPut("{id}/lessons/{lessonId:guid}/quiz")]
+    public async Task<IActionResult> SaveQuiz(Guid id, Guid lessonId, [FromBody] AqlamAcademy.Application.Features.Assessments.QuizSettingsInput settings, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new AqlamAcademy.Application.Features.Assessments.SaveQuizCommand(id, lessonId, settings), cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
     public record EnrollMembersRequest(IReadOnlyList<string> UserNames);
     public record SyncCurriculumRequest(int? ExpectedVersion, string? SyllabusRequirements, IReadOnlyList<SyncChapterInput>? Chapters);
     public record ChangeStatusRequest(AqlamAcademy.Domain.Enums.CourseStatus Status);

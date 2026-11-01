@@ -1,5 +1,6 @@
 using AqlamAcademy.Api.Infrastructure;
 using AqlamAcademy.Application.Features.Learning;
+using AqlamAcademy.Application.Features.Assessments;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +41,27 @@ public class LearnController : ControllerBase
     public async Task<IActionResult> Progress(Guid lessonId, [FromBody] ProgressRequest request, CancellationToken cancellationToken) =>
         ToActionResult(await _mediator.Send(
             new RecordProgressCommand(lessonId, request.PositionSeconds, request.WatchedPercent, request.MarkCompleted), cancellationToken));
+
+    /// <summary>Quiz status for the student: attempts used, best score, running attempt.</summary>
+    [HttpGet("lessons/{lessonId:guid}/quiz")]
+    public async Task<IActionResult> Quiz(Guid lessonId, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new GetQuizSummaryQuery(lessonId), cancellationToken));
+
+    /// <summary>Starts an attempt (or resumes the running one).</summary>
+    [HttpPost("lessons/{lessonId:guid}/quiz/attempts")]
+    public async Task<IActionResult> StartAttempt(Guid lessonId, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new StartAttemptCommand(lessonId), cancellationToken));
+
+    /// <summary>Autosave while answering.</summary>
+    [HttpPut("attempts/{attemptId:guid}/answers")]
+    public async Task<IActionResult> SaveAnswers(Guid attemptId, [FromBody] AnswersRequest request, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new SaveAnswersCommand(attemptId, request.Answers ?? []), cancellationToken));
+
+    [HttpPost("attempts/{attemptId:guid}/submit")]
+    public async Task<IActionResult> SubmitAttempt(Guid attemptId, [FromBody] AnswersRequest? request, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new SubmitAttemptCommand(attemptId, request?.Answers), cancellationToken));
+
+    public record AnswersRequest(IReadOnlyList<AnswerInput>? Answers);
 
     public record ProgressRequest(int? PositionSeconds, int? WatchedPercent, bool MarkCompleted = false);
 

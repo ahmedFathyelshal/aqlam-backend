@@ -191,7 +191,7 @@ public class CourseService : ICourseService
     public async Task<IReadOnlyList<string>?> GetPublishIssuesAsync(Guid id, CancellationToken cancellationToken)
     {
         var course = await LoadTreeAsync(id, tracking: false, cancellationToken);
-        return course is null ? null : CourseLifecycle.GetPublishIssues(course);
+        return course is null ? null : [.. CourseLifecycle.GetPublishIssues(course), .. await QuizIssuesAsync(course, cancellationToken)];
     }
 
     public async Task<Result<CourseDraftDto>> ChangeStatusAsync(Guid id, CourseStatus status, CancellationToken cancellationToken)
@@ -208,7 +208,7 @@ public class CourseService : ICourseService
 
         if (CourseLifecycle.RequiresCompleteCourse(status))
         {
-            var issues = CourseLifecycle.GetPublishIssues(course);
+            List<string> issues = [.. CourseLifecycle.GetPublishIssues(course), .. await QuizIssuesAsync(course, cancellationToken)];
             if (issues.Count > 0)
                 return Result<CourseDraftDto>.Failure(issues);
         }
@@ -231,6 +231,24 @@ public class CourseService : ICourseService
         await _context.SaveChangesAsync(cancellationToken);
 
         return Result<CourseDraftDto>.Success(course.Adapt<CourseDraftDto>());
+    }
+
+    /// <summary>Quiz lessons must have at least one question before the course can go live.</summary>
+    private async Task<List<string>> QuizIssuesAsync(Course course, CancellationToken cancellationToken)
+    {
+        var quizLessons = course.Chapters.Where(c => !c.IsDeleted)
+            .SelectMany(c => c.Lessons.Where(l => !l.IsDeleted && l.Type == LessonType.Quiz))
+            .ToList();
+        if (quizLessons.Count == 0)
+            return [];
+
+        var lessonIds = quizLessons.Select(l => l.Id).ToList();
+        var ready = await _context.Quizzes
+            .Where(q => lessonIds.Contains(q.LessonId) && q.Questions.Any())
+            .Select(q => q.LessonId)
+            .ToListAsync(cancellationToken);
+
+        return quizLessons.Where(l => !ready.Contains(l.Id)).Select(l => $"Quiz \"{l.Title}\" has no questions.").ToList();
     }
 
     private Task<Course?> LoadTreeAsync(Guid id, bool tracking, CancellationToken cancellationToken)

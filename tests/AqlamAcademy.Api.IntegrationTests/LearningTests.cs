@@ -90,7 +90,7 @@ public class LearningTests(ApiFactory factory)
     public async Task Completion_rules_differ_by_lesson_type()
     {
         var (_, org, courseId) = await PublishedCourseAsync("types",
-            [LessonSpec("Watch me"), LessonSpec("Read me", type: "Article"), LessonSpec("Quiz", type: "Quiz")]);
+            [LessonSpec("Watch me"), LessonSpec("Read me", type: "Article"), LessonSpec("Homework", type: "Assignment")]);
         var student = await EnrolledStudentAsync(org, courseId, "ty");
         var lessons = (await GetDataAsync(student, $"/api/orgs/{org}/learn/courses/{courseId}")).GetProperty("chapters")[0].GetProperty("lessons");
 
