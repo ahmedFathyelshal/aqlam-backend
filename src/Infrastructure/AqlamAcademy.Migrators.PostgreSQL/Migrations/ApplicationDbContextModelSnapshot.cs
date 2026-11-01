@@ -727,6 +727,13 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                             ConcurrencyStamp = "f4fe6bd9-57ef-4e36-a5cc-9c60010c2738",
                             Name = "Assistant",
                             NormalizedName = "ASSISTANT"
+                        },
+                        new
+                        {
+                            Id = new Guid("3a1c4e2b-7f5d-4b8a-9c61-2e4f8d0b7a13"),
+                            ConcurrencyStamp = "8d2f6a71-3c4b-4e9a-b5d0-7a1e2c3f4b56",
+                            Name = "SuperAdmin",
+                            NormalizedName = "SUPERADMIN"
                         });
                 });
 

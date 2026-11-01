@@ -2,6 +2,10 @@ using System.Text.Json;
 using AqlamAcademy.Domain.Lookups;
 using AqlamAcademy.Domain.Organizations;
 using AqlamAcademy.Infrastructure.Persistence.Services;
+using AqlamAcademy.Application.Common.Authorization;
+using AqlamAcademy.Infrastructure.Persistence.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -13,13 +17,18 @@ public class ApplicationDbInitializer
     private readonly ApplicationDbContext _context;
     private readonly TenantDbContext _tenantContext;
     private readonly PersonalOrganizationFactory _personalOrganizations;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly PlatformSettings _platform;
 
-    public ApplicationDbInitializer(ILogger<ApplicationDbInitializer> logger, ApplicationDbContext context, TenantDbContext tenantContext, PersonalOrganizationFactory personalOrganizations)
+    public ApplicationDbInitializer(ILogger<ApplicationDbInitializer> logger, ApplicationDbContext context, TenantDbContext tenantContext, PersonalOrganizationFactory personalOrganizations,
+        UserManager<ApplicationUser> userManager, IOptions<PlatformSettings> platformSettings)
     {
         _logger = logger;
         _context = context;
         _tenantContext = tenantContext;
         _personalOrganizations = personalOrganizations;
+        _userManager = userManager;
+        _platform = platformSettings.Value;
     }
 
     public async Task InitializeAsync()
@@ -64,6 +73,7 @@ public class ApplicationDbInitializer
         await UpsertLookupsFromJsonAsync("course_states.json", _context.CourseStates);
 
         await BackfillPersonalOrganizationsAsync();
+        await EnsureBootstrapAdminAsync();
     }
 
     /// <summary>
@@ -93,6 +103,29 @@ public class ApplicationDbInitializer
         }
 
         await _context.SaveChangesAsync();
+    }
+
+    private async Task EnsureBootstrapAdminAsync()
+    {
+        var admin = _platform.BootstrapAdmin;
+        if (admin is null || string.IsNullOrWhiteSpace(admin.UserName) || string.IsNullOrWhiteSpace(admin.Password))
+            return;
+
+        var user = await _userManager.FindByNameAsync(admin.UserName);
+        if (user is null)
+        {
+            user = new ApplicationUser { UserName = admin.UserName, FullName = "Platform Administrator", EmailConfirmed = true };
+            var created = await _userManager.CreateAsync(user, admin.Password);
+            if (!created.Succeeded)
+            {
+                _logger.LogError("Could not create bootstrap admin {UserName}: {Errors}", admin.UserName, string.Join("; ", created.Errors.Select(e => e.Description)));
+                return;
+            }
+            _logger.LogInformation("Created bootstrap platform administrator {UserName}.", admin.UserName);
+        }
+
+        if (!await _userManager.IsInRoleAsync(user, PlatformRoles.SuperAdmin))
+            await _userManager.AddToRoleAsync(user, PlatformRoles.SuperAdmin);
     }
 
     /// <summary>

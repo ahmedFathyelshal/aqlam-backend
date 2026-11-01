@@ -32,19 +32,23 @@ public class OrganizationTenantStore : IMultiTenantStore<AqlamTenantInfo>
 
         var key = identifier.Trim().ToLowerInvariant();
 
-        return await _cache.GetOrCreateAsync(CacheKey(key), async entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = CacheDuration;
+        if (_cache.TryGetValue(CacheKey(key), out AqlamTenantInfo? cached))
+            return cached;
 
-            var query = _context.Organizations.AsNoTracking()
-                .Where(o => o.Status == OrganizationStatus.Active);
+        var query = _context.Organizations.AsNoTracking()
+            .Where(o => o.Status == OrganizationStatus.Active);
 
-            var organization = key.Contains('.')
-                ? await query.FirstOrDefaultAsync(o => o.Domains.Any(d => d.Host == key))
-                : await query.FirstOrDefaultAsync(o => o.Slug == key);
+        var organization = key.Contains('.')
+            ? await query.FirstOrDefaultAsync(o => o.Domains.Any(d => d.Host == key))
+            : await query.FirstOrDefaultAsync(o => o.Slug == key);
 
-            return organization is null ? null : ToTenantInfo(organization);
-        });
+        // Only found tenants are cached: caching a miss would hide a newly created organization.
+        if (organization is null)
+            return null;
+
+        var tenant = ToTenantInfo(organization);
+        _cache.Set(CacheKey(key), tenant, CacheDuration);
+        return tenant;
     }
 
     public async Task<AqlamTenantInfo?> GetAsync(string id)

@@ -41,6 +41,7 @@ public static class DependencyInjection
         });
 
         services.Configure<CellSettings>(configuration.GetSection(CellSettings.SectionName));
+        services.Configure<PlatformSettings>(configuration.GetSection(PlatformSettings.SectionName));
 
         // 2. ASP.NET Identity
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
@@ -65,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<ICourseService, CourseService>();
         services.AddScoped<IMembershipService, MembershipService>();
         services.AddScoped<PersonalOrganizationFactory>();
+        services.AddScoped<IOrganizationAdminService, OrganizationAdminService>();
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
 
         return services;
