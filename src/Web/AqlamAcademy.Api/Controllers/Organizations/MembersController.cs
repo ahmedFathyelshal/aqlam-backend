@@ -30,6 +30,25 @@ public class MembersController : ControllerBase
     public async Task<IActionResult> Add([FromBody] AddMemberCommand command, CancellationToken cancellationToken) =>
         ToActionResult(await _mediator.Send(command, cancellationToken));
 
+    /// <summary>Excel template for bulk import (columns: FullName, Role, Phone, Email).</summary>
+    [HttpGet("import/template")]
+    [HasPermission(Permissions.MembersManage)]
+    public IActionResult ImportTemplate([FromServices] IMemberImportService importer) =>
+        File(importer.BuildTemplate(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "members-import-template.xlsx");
+
+    /// <summary>Creates accounts and memberships from an Excel sheet; returns a per-row report with temporary passwords.</summary>
+    [HttpPost("import")]
+    [HasPermission(Permissions.MembersManage)]
+    [RequestSizeLimit(2 * 1024 * 1024)]
+    public async Task<IActionResult> Import(IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(Application.Common.Models.Result.Failure(new[] { "Please upload an .xlsx file." }));
+
+        await using var stream = file.OpenReadStream();
+        return ToActionResult(await _mediator.Send(new ImportMembersCommand(stream), cancellationToken));
+    }
+
     [HttpPut("{userId:guid}/roles")]
     [HasPermission(Permissions.MembersManage)]
     public async Task<IActionResult> UpdateRoles(Guid userId, [FromBody] UpdateRolesRequest request, CancellationToken cancellationToken) =>

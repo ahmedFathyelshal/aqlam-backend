@@ -83,6 +83,25 @@ public class IdentityService : IIdentityService
         return await _tokenService.RefreshSessionAsync(refreshToken, ipAddress, userAgent, deviceId, hostTenantId);
     }
 
+    public async Task<Result<bool>> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return Result<bool>.NotFound("User not found.");
+
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!result.Succeeded)
+            return Result<bool>.Failure(result.Errors.Select(e => e.Description));
+
+        if (user.MustChangePassword)
+        {
+            user.MustChangePassword = false;
+            await _userManager.UpdateAsync(user);
+        }
+
+        return Result<bool>.Success(true);
+    }
+
     public async Task<Result<bool>> LogoutAsync(string refreshToken, string? ipAddress, string? deviceId)
     {
         return await _tokenService.RevokeTokenAsync(refreshToken, ipAddress, deviceId);

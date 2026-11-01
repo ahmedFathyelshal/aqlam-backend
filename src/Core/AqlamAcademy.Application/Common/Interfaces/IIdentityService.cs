@@ -20,6 +20,9 @@ public interface IIdentityService
     // Refresh Token
     Task<Result<AuthTokens>> RefreshSessionAsync(string refreshToken, string? ipAddress, string? userAgent, string? deviceId, string? hostTenantId);
 
+    // Password
+    Task<Result<bool>> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
+
     // Logout
     Task<Result<bool>> LogoutAsync(string refreshToken, string? ipAddress, string? deviceId);
 }

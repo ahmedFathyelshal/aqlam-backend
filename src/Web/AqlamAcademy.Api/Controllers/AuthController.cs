@@ -13,6 +13,7 @@ using AqlamAcademy.Application.Features.Auth.Commands.Login;
 using AqlamAcademy.Application.Features.Auth.Commands.Refresh;
 using AqlamAcademy.Application.Common.Models;
 using AqlamAcademy.Application.Features.Auth.Commands.Logout;
+using AqlamAcademy.Application.Features.Auth.Commands.ChangePassword;
 
 namespace AqlamAcademy.Api.Controllers;
 
@@ -166,6 +167,16 @@ public class AuthController : ControllerBase
         return Ok(Result<bool>.Success(true));
     }
 
+    /// <summary>Changes the signed-in user's password and clears the "must change password" flag.</summary>
+    [HttpPost("change-password")]
+    [Authorize]
+    [EnableRateLimiting(PresentationDependencyInjection.AuthRateLimitPolicy)]
+    public async Task<ActionResult<Result<bool>>> ChangePassword(ChangePasswordCommand command)
+    {
+        var result = await _mediator.Send(command);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
     [HttpGet("me")]
     [Authorize]
     public ActionResult<Result<LoginResponse>> GetCurrentUser()
@@ -197,7 +208,8 @@ public class AuthController : ControllerBase
         UserName = user.UserName,
         Name = string.IsNullOrWhiteSpace(user.FullName) ? user.UserName : user.FullName,
         Email = user.Email,
-        Roles = user.Roles
+        Roles = user.Roles,
+        MustChangePassword = user.MustChangePassword
     };
 
     /// <summary>

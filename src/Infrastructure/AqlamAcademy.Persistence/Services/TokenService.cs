@@ -297,7 +297,7 @@ public class TokenService : ITokenService
     }
 
     private static AuthUser ToAuthUser(ApplicationUser user, IList<string> roles) =>
-        new(user.Id, user.UserName ?? string.Empty, user.Email, user.FullName, roles.ToList());
+        new(user.Id, user.UserName ?? string.Empty, user.Email, user.FullName, roles.ToList(), user.MustChangePassword);
 
     private string GenerateSecureRandomString(int length = 64)
     {
