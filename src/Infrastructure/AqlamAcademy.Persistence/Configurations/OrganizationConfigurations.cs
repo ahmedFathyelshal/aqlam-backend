@@ -27,7 +27,7 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
         builder.Property(x => x.TimeZone).IsRequired().HasMaxLength(64);
         builder.Property(x => x.LogoUrl).HasMaxLength(1000);
         builder.Property(x => x.PrimaryColor).HasMaxLength(9);
-        builder.Property(x => x.DedicatedConnectionString).HasMaxLength(2000);
+        builder.Property(x => x.DedicatedConnectionString).HasMaxLength(4000); // encrypted (Data Protection)
     }
 }
 

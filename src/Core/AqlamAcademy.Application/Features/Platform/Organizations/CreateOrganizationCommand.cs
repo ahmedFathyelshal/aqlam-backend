@@ -12,7 +12,9 @@ public record CreateOrganizationCommand(
     string Slug,
     OrganizationType Type,
     string CountryCode,
-    string OwnerUserName) : IRequest<Result<OrganizationDto>>;
+    string OwnerUserName,
+    IsolationTier IsolationTier = IsolationTier.Shared,
+    string? DedicatedConnectionString = null) : IRequest<Result<OrganizationDto>>;
 
 public class CreateOrganizationCommandValidator : AbstractValidator<CreateOrganizationCommand>
 {
@@ -45,6 +47,14 @@ public class CreateOrganizationCommandValidator : AbstractValidator<CreateOrgani
             .WithMessage("Country must be SA or EG.");
 
         RuleFor(x => x.OwnerUserName).NotEmpty();
+
+        RuleFor(x => x.IsolationTier).IsInEnum();
+        RuleFor(x => x.DedicatedConnectionString)
+            .NotEmpty().WithMessage("A connection string is required for a dedicated database.")
+            .When(x => x.IsolationTier == IsolationTier.Dedicated);
+        RuleFor(x => x.DedicatedConnectionString)
+            .Empty().WithMessage("A connection string is only allowed for a dedicated database.")
+            .When(x => x.IsolationTier == IsolationTier.Shared);
     }
 }
 
@@ -58,5 +68,6 @@ public class CreateOrganizationCommandHandler : IRequestHandler<CreateOrganizati
     }
 
     public Task<Result<OrganizationDto>> Handle(CreateOrganizationCommand request, CancellationToken cancellationToken) =>
-        _organizations.CreateAsync(request.Name.Trim(), request.Slug, request.Type, request.CountryCode, request.OwnerUserName.Trim(), cancellationToken);
+        _organizations.CreateAsync(request.Name.Trim(), request.Slug, request.Type, request.CountryCode, request.OwnerUserName.Trim(),
+            request.IsolationTier, request.DedicatedConnectionString, cancellationToken);
 }

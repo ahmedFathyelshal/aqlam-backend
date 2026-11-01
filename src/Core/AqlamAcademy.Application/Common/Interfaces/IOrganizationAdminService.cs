@@ -13,6 +13,8 @@ public interface IOrganizationAdminService
         OrganizationType type,
         string countryCode,
         string ownerUserName,
+        IsolationTier isolationTier,
+        string? dedicatedConnectionString,
         CancellationToken cancellationToken);
 
     Task<IReadOnlyList<OrganizationDto>> ListAsync(OrganizationType? type, CancellationToken cancellationToken);

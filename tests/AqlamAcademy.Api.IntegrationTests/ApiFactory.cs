@@ -18,6 +18,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         .WithImage("postgres:17-alpine")
         .Build();
 
+    /// <summary>Connection string of the shared database in the test container.</summary>
+    public string SharedConnectionString => _db.GetConnectionString();
+
     public async Task InitializeAsync()
     {
         await _db.StartAsync();

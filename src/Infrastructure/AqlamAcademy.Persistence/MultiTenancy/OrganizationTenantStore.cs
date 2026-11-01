@@ -16,11 +16,13 @@ public class OrganizationTenantStore : IMultiTenantStore<AqlamTenantInfo>
 
     private readonly ApplicationDbContext _context;
     private readonly IMemoryCache _cache;
+    private readonly ConnectionStringProtector _protector;
 
-    public OrganizationTenantStore(ApplicationDbContext context, IMemoryCache cache)
+    public OrganizationTenantStore(ApplicationDbContext context, IMemoryCache cache, ConnectionStringProtector protector)
     {
         _context = context;
         _cache = cache;
+        _protector = protector;
     }
 
     public static string CacheKey(string identifier) => $"tenant:identifier:{identifier.ToLowerInvariant()}";
@@ -74,7 +76,7 @@ public class OrganizationTenantStore : IMultiTenantStore<AqlamTenantInfo>
     public Task<bool> UpdateAsync(AqlamTenantInfo tenantInfo) => throw new NotSupportedException();
     public Task<bool> RemoveAsync(string identifier) => throw new NotSupportedException();
 
-    private static AqlamTenantInfo ToTenantInfo(Organization organization) => new()
+    private AqlamTenantInfo ToTenantInfo(Organization organization) => new()
     {
         Id = organization.Id.ToString(),
         Identifier = organization.Slug,
@@ -82,6 +84,9 @@ public class OrganizationTenantStore : IMultiTenantStore<AqlamTenantInfo>
         Type = organization.Type,
         Status = organization.Status,
         IsolationTier = organization.IsolationTier,
-        ConnectionString = organization.IsolationTier == IsolationTier.Dedicated ? organization.DedicatedConnectionString : null
+        // Stored encrypted; decrypted only in memory for this request's TenantDbContext.
+        ConnectionString = organization is { IsolationTier: IsolationTier.Dedicated, DedicatedConnectionString: not null }
+            ? _protector.Unprotect(organization.DedicatedConnectionString)
+            : null
     };
 }

@@ -2,6 +2,7 @@ using System.Text.Json;
 using AqlamAcademy.Domain.Lookups;
 using AqlamAcademy.Domain.Organizations;
 using AqlamAcademy.Infrastructure.Persistence.Services;
+using AqlamAcademy.Infrastructure.Persistence.MultiTenancy;
 using AqlamAcademy.Application.Common.Authorization;
 using AqlamAcademy.Infrastructure.Persistence.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -19,9 +20,10 @@ public class ApplicationDbInitializer
     private readonly PersonalOrganizationFactory _personalOrganizations;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly PlatformSettings _platform;
+    private readonly TenantDatabaseMigrator _tenantDatabases;
 
     public ApplicationDbInitializer(ILogger<ApplicationDbInitializer> logger, ApplicationDbContext context, TenantDbContext tenantContext, PersonalOrganizationFactory personalOrganizations,
-        UserManager<ApplicationUser> userManager, IOptions<PlatformSettings> platformSettings)
+        UserManager<ApplicationUser> userManager, IOptions<PlatformSettings> platformSettings, TenantDatabaseMigrator tenantDatabases)
     {
         _logger = logger;
         _context = context;
@@ -29,6 +31,7 @@ public class ApplicationDbInitializer
         _personalOrganizations = personalOrganizations;
         _userManager = userManager;
         _platform = platformSettings.Value;
+        _tenantDatabases = tenantDatabases;
     }
 
     public async Task InitializeAsync()
@@ -39,8 +42,9 @@ public class ApplicationDbInitializer
             {
                 await _context.Database.MigrateAsync();
 
-                // Tenant tables in the shared database. Dedicated-tier databases get their own migration run (P2).
+                // Tenant tables in the shared database, then every dedicated-tier database.
                 await _tenantContext.Database.MigrateAsync();
+                await _tenantDatabases.MigrateAllDedicatedAsync();
             }
         }
         catch (Exception ex)

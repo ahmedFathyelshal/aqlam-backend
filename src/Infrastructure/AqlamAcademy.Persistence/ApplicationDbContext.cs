@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 
 using System.Linq.Expressions;
 using System.Reflection;
@@ -13,7 +14,7 @@ using AqlamAcademy.Domain.Organizations;
 
 namespace AqlamAcademy.Infrastructure.Persistence;
 
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IDataProtectionKeyContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
@@ -37,6 +38,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<OrganizationDomain> OrganizationDomains => Set<OrganizationDomain>();
     public DbSet<Membership> Memberships => Set<Membership>();
     public DbSet<JoinCode> JoinCodes => Set<JoinCode>();
+
+    // ASP.NET Data Protection key ring (shared by all API instances)
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

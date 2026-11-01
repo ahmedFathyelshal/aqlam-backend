@@ -7,12 +7,13 @@ using AqlamAcademy.Infrastructure.Persistence.Identity;
 using AqlamAcademy.Infrastructure.Persistence.Services;
 using AqlamAcademy.Infrastructure.Persistence.MultiTenancy;
 using Finbuckle.MultiTenant.Abstractions;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace AqlamAcademy.Infrastructure.Persistence;
 
 public static class DependencyInjection
 {
-    private const string MigrationsAssembly = "AqlamAcademy.Migrators.PostgreSQL";
+    public const string MigrationsAssembly = "AqlamAcademy.Migrators.PostgreSQL";
 
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
@@ -42,6 +43,14 @@ public static class DependencyInjection
 
         services.Configure<CellSettings>(configuration.GetSection(CellSettings.SectionName));
         services.Configure<PlatformSettings>(configuration.GetSection(PlatformSettings.SectionName));
+
+        // Data Protection keys in the platform database: encrypted values (e.g. dedicated-tier connection strings)
+        // can be read by every API instance and survive redeployments.
+        services.AddDataProtection()
+            .SetApplicationName("AqlamAcademy")
+            .PersistKeysToDbContext<ApplicationDbContext>();
+        services.AddSingleton<ConnectionStringProtector>();
+        services.AddScoped<TenantDatabaseMigrator>();
 
         // 2. ASP.NET Identity
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
