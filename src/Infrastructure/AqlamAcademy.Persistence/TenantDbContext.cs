@@ -28,6 +28,7 @@ public class TenantDbContext : MultiTenantDbContext
     public DbSet<CourseChapter> CourseChapters => Set<CourseChapter>();
     public DbSet<CourseLesson> CourseLessons => Set<CourseLesson>();
     public DbSet<LessonResource> LessonResources => Set<LessonResource>();
+    public DbSet<AqlamAcademy.Domain.Learning.LessonProgress> LessonProgress => Set<AqlamAcademy.Domain.Learning.LessonProgress>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

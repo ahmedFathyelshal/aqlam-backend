@@ -35,6 +35,11 @@ public class MeController : ControllerBase
         return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
     }
 
+    /// <summary>The user's courses across all organizations, most recently used first.</summary>
+    [HttpGet("courses")]
+    public async Task<IActionResult> Courses(CancellationToken cancellationToken) =>
+        Ok(await _mediator.Send(new AqlamAcademy.Application.Features.Learning.GetMyCoursesQuery(), cancellationToken));
+
     /// <summary>Organizations the user belongs to, with their roles (used for the organization switcher).</summary>
     [HttpGet("memberships")]
     public async Task<ActionResult<Result<IReadOnlyList<MembershipSummaryDto>>>> GetMemberships(CancellationToken cancellationToken)

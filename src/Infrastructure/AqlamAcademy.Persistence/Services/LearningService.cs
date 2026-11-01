@@ -1,0 +1,414 @@
+using AqlamAcademy.Application.Common.Authorization;
+using AqlamAcademy.Application.Common.Interfaces;
+using AqlamAcademy.Application.Common.Models;
+using AqlamAcademy.Application.Features.Learning;
+using AqlamAcademy.Application.Features.Teacher.Courses.DTOs;
+using AqlamAcademy.Domain.Courses;
+using AqlamAcademy.Domain.Enums;
+using AqlamAcademy.Domain.Learning;
+using AqlamAcademy.Domain.Organizations;
+using Microsoft.EntityFrameworkCore;
+
+namespace AqlamAcademy.Infrastructure.Persistence.Services;
+
+/// <summary>
+/// Student-side learning. Course structure and progress come from the tenant store; enrollments and memberships
+/// from the platform store. Every entry point resolves access the same way (see <see cref="ResolveAccessAsync"/>).
+/// </summary>
+public class LearningService : ILearningService
+{
+    private readonly TenantDbContext _tenant;
+    private readonly ApplicationDbContext _platform;
+    private readonly ICurrentUserService _currentUser;
+    private readonly ICurrentOrganization _currentOrganization;
+    private readonly IMembershipService _memberships;
+
+    public LearningService(TenantDbContext tenant, ApplicationDbContext platform, ICurrentUserService currentUser,
+        ICurrentOrganization currentOrganization, IMembershipService memberships)
+    {
+        _tenant = tenant;
+        _platform = platform;
+        _currentUser = currentUser;
+        _currentOrganization = currentOrganization;
+        _memberships = memberships;
+    }
+
+    public async Task<Result<LearnerCourseDto>> GetCourseAsync(Guid courseId, CancellationToken cancellationToken)
+    {
+        var access = await ResolveAccessAsync(courseId, cancellationToken);
+        if (access.Failure is { } failure)
+            return Fail<LearnerCourseDto>(failure);
+
+        var (course, enrollment, isPreview) = (access.Course!, access.Enrollment, access.IsPreview);
+        var progress = await LoadProgressAsync(course.Id, cancellationToken);
+        var lockStates = EvaluateLocks(course, enrollment, isPreview, progress);
+
+        var chapters = course.Chapters
+            .OrderBy(c => c.Order)
+            .Select(c => new LearnerChapterDto(
+                c.Id,
+                c.Title,
+                c.Lessons.Where(l => l.IsPublished).OrderBy(l => l.Order).Select(l =>
+                {
+                    var state = lockStates[l.Id];
+                    progress.TryGetValue(l.Id, out var p);
+                    return new LearnerLessonDto(l.Id, l.Title, l.Type.ToString(), l.DurationInMinutes,
+                        state.IsLocked, state.IsLocked ? state.Reason.ToString() : null, state.UnlocksAtUtc,
+                        p?.IsCompleted ?? false, p?.WatchedPercent ?? 0);
+                }).ToList()))
+            .Where(c => c.Lessons.Count > 0)
+            .ToList();
+
+        // Keep the enrollment's title snapshot fresh for "My Courses".
+        if (enrollment is not null && enrollment.CourseTitle != course.Title)
+        {
+            enrollment.CourseTitle = course.Title;
+            await _platform.SaveChangesAsync(cancellationToken);
+        }
+
+        return Result<LearnerCourseDto>.Success(new LearnerCourseDto(
+            course.Id, course.Title, course.Subtitle, course.ThumbnailUrl, course.Status.ToString(), isPreview,
+            enrollment?.ExpiresAtUtc, enrollment?.ProgressPercent ?? 0,
+            enrollment?.LastLessonId ?? LessonAccess.VisibleLessons(course).FirstOrDefault()?.Id,
+            chapters));
+    }
+
+    public async Task<Result<LessonContentDto>> GetLessonAsync(Guid lessonId, CancellationToken cancellationToken)
+    {
+        var courseId = await CourseIdOfLessonAsync(lessonId, cancellationToken);
+        if (courseId is null)
+            return Result<LessonContentDto>.NotFound("Lesson not found.");
+
+        var access = await ResolveAccessAsync(courseId.Value, cancellationToken);
+        if (access.Failure is { } failure)
+            return Fail<LessonContentDto>(failure);
+
+        var (course, enrollment, isPreview) = (access.Course!, access.Enrollment, access.IsPreview);
+        var visible = LessonAccess.VisibleLessons(course);
+        var index = visible.ToList().FindIndex(l => l.Id == lessonId);
+        if (index < 0)
+            return Result<LessonContentDto>.NotFound("Lesson not found."); // unpublished lessons are invisible to students
+
+        var progress = await LoadProgressAsync(course.Id, cancellationToken);
+        var state = EvaluateLocks(course, enrollment, isPreview, progress)[lessonId];
+        if (state.IsLocked)
+            return Result<LessonContentDto>.Failure(ResultErrorType.Forbidden, DescribeLock(state));
+
+        var lesson = visible[index];
+        progress.TryGetValue(lessonId, out var p);
+
+        return Result<LessonContentDto>.Success(new LessonContentDto(
+            lesson.Id, course.Id, lesson.Title, lesson.Type.ToString(), lesson.DurationInMinutes,
+            lesson.VideoUrl, lesson.Summary, lesson.Content,
+            lesson.Resources.OrderBy(r => r.CreatedAtUtc).Select(r => new LessonResourceDto
+            {
+                Id = r.Id,
+                DisplayName = r.DisplayName,
+                ResourceUrl = r.ResourceUrl,
+                Type = r.Type.ToString(),
+                IsDownloadable = r.IsDownloadable
+            }).ToList(),
+            p?.WatchedPercent ?? 0, p?.LastPositionSeconds ?? 0, p?.IsCompleted ?? false,
+            index > 0 ? visible[index - 1].Id : null,
+            index < visible.Count - 1 ? visible[index + 1].Id : null));
+    }
+
+    public async Task<Result<ProgressResultDto>> RecordProgressAsync(Guid lessonId, int? positionSeconds, int? watchedPercent, bool markCompleted, CancellationToken cancellationToken)
+    {
+        var courseId = await CourseIdOfLessonAsync(lessonId, cancellationToken);
+        if (courseId is null)
+            return Result<ProgressResultDto>.NotFound("Lesson not found.");
+
+        var access = await ResolveAccessAsync(courseId.Value, cancellationToken);
+        if (access.Failure is { } failure)
+            return Fail<ProgressResultDto>(failure);
+        if (access.Enrollment is null)
+            return Result<ProgressResultDto>.Failure(ResultErrorType.Forbidden, "Progress is only recorded for enrolled students (preview mode).");
+
+        var (course, enrollment) = (access.Course!, access.Enrollment);
+        var visible = LessonAccess.VisibleLessons(course);
+        var lesson = visible.FirstOrDefault(l => l.Id == lessonId);
+        if (lesson is null)
+            return Result<ProgressResultDto>.NotFound("Lesson not found.");
+
+        var allProgress = await LoadProgressAsync(course.Id, cancellationToken);
+        var state = EvaluateLocks(course, enrollment, isPreview: false, allProgress)[lessonId];
+        if (state.IsLocked)
+            return Result<ProgressResultDto>.Failure(ResultErrorType.Forbidden, DescribeLock(state));
+
+        if (markCompleted && lesson.Type is LessonType.Quiz or LessonType.Assignment)
+            return Result<ProgressResultDto>.Failure(new[] { "Quizzes and assignments are completed by submitting them." });
+        if (markCompleted && lesson.Type == LessonType.Video)
+            return Result<ProgressResultDto>.Failure(new[] { "Videos are completed by watching them." });
+
+        var now = DateTime.UtcNow;
+        var progress = await _tenant.LessonProgress.FirstOrDefaultAsync(p => p.UserId == _currentUser.UserId && p.LessonId == lessonId, cancellationToken);
+        if (progress is null)
+        {
+            progress = new LessonProgress { UserId = _currentUser.UserId, CourseId = course.Id, LessonId = lessonId };
+            _tenant.LessonProgress.Add(progress);
+        }
+
+        if (positionSeconds is { } position)
+            progress.LastPositionSeconds = position;
+        if (watchedPercent is { } watched)
+            progress.WatchedPercent = Math.Max(progress.WatchedPercent, watched); // never goes backwards
+        progress.LastModifiedAtUtc = now;
+
+        var justCompleted = false;
+        var reachedVideoThreshold = lesson.Type == LessonType.Video && progress.WatchedPercent >= LessonProgress.VideoCompletionThreshold;
+        if (!progress.IsCompleted && (reachedVideoThreshold || (markCompleted && lesson.Type == LessonType.Article)))
+        {
+            progress.CompletedAtUtc = now; // set once; this is the "lesson completed" moment
+            justCompleted = true;
+        }
+
+        await _tenant.SaveChangesAsync(cancellationToken);
+
+        // Refresh the enrollment snapshot used by "My Courses" and dashboards.
+        var completedIds = allProgress.Values.Where(p => p.IsCompleted).Select(p => p.LessonId).ToHashSet();
+        if (progress.IsCompleted)
+            completedIds.Add(lessonId);
+        enrollment.ProgressPercent = visible.Count == 0 ? 0 : (int)Math.Round(100.0 * visible.Count(l => completedIds.Contains(l.Id)) / visible.Count);
+        enrollment.LastLessonId = lessonId;
+        enrollment.LastAccessedAtUtc = now;
+        await _platform.SaveChangesAsync(cancellationToken);
+
+        return Result<ProgressResultDto>.Success(new ProgressResultDto(
+            lessonId, progress.WatchedPercent, progress.LastPositionSeconds, progress.IsCompleted, justCompleted, enrollment.ProgressPercent));
+    }
+
+    public async Task<Result<MyCourseDto>> EnrollSelfAsync(Guid courseId, CancellationToken cancellationToken)
+    {
+        if (_currentOrganization.OrganizationId is not { } orgId)
+            return Result<MyCourseDto>.NotFound("Organization not found.");
+
+        var course = await _tenant.Courses.AsNoTracking().FirstOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+        // Only published courses that are open to outsiders can be joined without the organization's staff.
+        if (course is null || course.Status != CourseStatus.Published || course.Visibility == CourseVisibility.Private)
+            return Result<MyCourseDto>.NotFound("Course not found.");
+        if (course.PricingType != PricingType.Free || course.CodeActivationOnly)
+            return Result<MyCourseDto>.Failure(ResultErrorType.Forbidden, "This course requires a purchase or an activation code.");
+
+        var userId = _currentUser.UserId;
+        var membership = await _platform.Memberships.FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == userId, cancellationToken);
+        if (membership is { Status: MembershipStatus.Pending })
+            return Result<MyCourseDto>.Failure(ResultErrorType.Forbidden, "Your membership is waiting for approval.");
+        if (membership is { Status: MembershipStatus.Suspended })
+            return Result<MyCourseDto>.Failure(ResultErrorType.Forbidden, "Your membership in this organization is suspended.");
+
+        if (membership is null)
+        {
+            _platform.Memberships.Add(new Membership
+            {
+                OrganizationId = orgId,
+                UserId = userId,
+                Roles = OrganizationRole.Student,
+                Status = MembershipStatus.Active,
+                Source = MembershipSource.PublicEnrollment
+            });
+        }
+        else if (membership.Status == MembershipStatus.Left)
+        {
+            membership.Roles = OrganizationRole.Student;
+            membership.Status = MembershipStatus.Active;
+            membership.Source = MembershipSource.PublicEnrollment;
+            membership.JoinedAtUtc = DateTime.UtcNow;
+        }
+        else
+        {
+            membership.Roles |= OrganizationRole.Student;
+        }
+
+        var enrollment = await _platform.Enrollments.FirstOrDefaultAsync(e => e.UserId == userId && e.CourseId == courseId, cancellationToken);
+        if (enrollment is not null && enrollment.IsUsable(DateTime.UtcNow))
+            return Result<MyCourseDto>.Conflict("You are already enrolled in this course.");
+
+        enrollment = UpsertEnrollment(enrollment, userId, orgId, course, EnrollmentSource.FreeEnrollment);
+        await _platform.SaveChangesAsync(cancellationToken);
+        _memberships.Invalidate(userId, orgId);
+
+        return Result<MyCourseDto>.Success((await GetMyCoursesAsync(cancellationToken)).First(c => c.CourseId == courseId));
+    }
+
+    public async Task<Result<IReadOnlyList<EnrollMemberResultDto>>> EnrollMembersAsync(Guid courseId, IReadOnlyList<string> userNames, CancellationToken cancellationToken)
+    {
+        if (_currentOrganization.OrganizationId is not { } orgId)
+            return Result<IReadOnlyList<EnrollMemberResultDto>>.NotFound("Organization not found.");
+
+        var course = await _tenant.Courses.AsNoTracking().FirstOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+        if (course is null)
+            return Result<IReadOnlyList<EnrollMemberResultDto>>.NotFound("Course not found.");
+        if (course.Status is not (CourseStatus.Published or CourseStatus.Scheduled))
+            return Result<IReadOnlyList<EnrollMemberResultDto>>.Conflict("Students can only be enrolled in scheduled or published courses.");
+
+        var normalized = userNames.Select(u => u.Trim()).Where(u => u.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var upper = normalized.Select(u => u.ToUpperInvariant()).ToList();
+
+        var members = await (
+                from u in _platform.Users
+                join m in _platform.Memberships on u.Id equals m.UserId
+                where upper.Contains(u.NormalizedUserName!) && m.OrganizationId == orgId
+                select new { User = u, Membership = m })
+            .ToListAsync(cancellationToken);
+        var userIds = members.Select(m => m.User.Id).ToList();
+        var existing = await _platform.Enrollments.Where(e => e.CourseId == courseId && userIds.Contains(e.UserId)).ToDictionaryAsync(e => e.UserId, cancellationToken);
+
+        var now = DateTime.UtcNow;
+        var results = new List<EnrollMemberResultDto>();
+        foreach (var userName in normalized)
+        {
+            var member = members.FirstOrDefault(m => string.Equals(m.User.UserName, userName, StringComparison.OrdinalIgnoreCase));
+            if (member is null || member.Membership.Status != MembershipStatus.Active)
+            {
+                results.Add(new EnrollMemberResultDto(userName, "Failed", "Not an active member of this organization."));
+                continue;
+            }
+
+            existing.TryGetValue(member.User.Id, out var enrollment);
+            if (enrollment is not null && enrollment.IsUsable(now))
+            {
+                results.Add(new EnrollMemberResultDto(userName, "AlreadyEnrolled", null));
+                continue;
+            }
+
+            member.Membership.Roles |= OrganizationRole.Student;
+            UpsertEnrollment(enrollment, member.User.Id, orgId, course, EnrollmentSource.Manual);
+            results.Add(new EnrollMemberResultDto(userName, "Enrolled", null));
+        }
+
+        await _platform.SaveChangesAsync(cancellationToken);
+        foreach (var userId in userIds)
+            _memberships.Invalidate(userId, orgId);
+
+        return Result<IReadOnlyList<EnrollMemberResultDto>>.Success(results);
+    }
+
+    public async Task<Result<IReadOnlyList<EnrollmentDto>>> ListEnrollmentsAsync(Guid courseId, CancellationToken cancellationToken)
+    {
+        if (_currentOrganization.OrganizationId is not { } orgId)
+            return Result<IReadOnlyList<EnrollmentDto>>.NotFound("Organization not found.");
+        if (!await _tenant.Courses.AnyAsync(c => c.Id == courseId, cancellationToken))
+            return Result<IReadOnlyList<EnrollmentDto>>.NotFound("Course not found.");
+
+        var rows = await (
+                from e in _platform.Enrollments.AsNoTracking()
+                join u in _platform.Users.AsNoTracking() on e.UserId equals u.Id
+                where e.OrganizationId == orgId && e.CourseId == courseId && e.Status == EnrollmentStatus.Active
+                orderby u.FullName
+                select new EnrollmentDto(e.UserId, u.UserName!, u.FullName, e.Source.ToString(), e.StartsAtUtc, e.ExpiresAtUtc, e.ProgressPercent))
+            .ToListAsync(cancellationToken);
+
+        return Result<IReadOnlyList<EnrollmentDto>>.Success(rows);
+    }
+
+    public async Task<IReadOnlyList<MyCourseDto>> GetMyCoursesAsync(CancellationToken cancellationToken)
+    {
+        var now = DateTime.UtcNow;
+        var rows = await (
+                from e in _platform.Enrollments.AsNoTracking()
+                join o in _platform.Organizations.AsNoTracking() on e.OrganizationId equals o.Id
+                where e.UserId == _currentUser.UserId && e.Status == EnrollmentStatus.Active && o.Status == OrganizationStatus.Active
+                orderby e.LastAccessedAtUtc ?? e.StartsAtUtc descending
+                select new { e, o.Slug, o.Name })
+            .ToListAsync(cancellationToken);
+
+        return rows.Select(r => new MyCourseDto(
+                r.e.CourseId, r.e.CourseTitle, r.e.OrganizationId, r.Slug, r.Name, r.e.ProgressPercent,
+                r.e.LastLessonId, r.e.LastAccessedAtUtc, r.e.ExpiresAtUtc, !r.e.IsUsable(now)))
+            .ToList();
+    }
+
+    // ---- access ------------------------------------------------------------------------------------------
+
+    private sealed record Access(Course? Course, Enrollment? Enrollment, bool IsPreview, Result? Failure);
+
+    /// <summary>
+    /// Staff (courses.view) may preview any course of their organization. Students need an active, unexpired
+    /// enrollment, and never see drafts or suspended courses.
+    /// </summary>
+    private async Task<Access> ResolveAccessAsync(Guid courseId, CancellationToken cancellationToken)
+    {
+        if (_currentOrganization.OrganizationId is not { } orgId)
+            return new(null, null, false, Result<bool>.NotFound("Organization not found."));
+
+        var course = await _tenant.Courses
+            .Include(c => c.Chapters).ThenInclude(ch => ch.Lessons).ThenInclude(l => l.Resources)
+            .AsSplitQuery()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+        if (course is null)
+            return new(null, null, false, Result<bool>.NotFound("Course not found."));
+
+        var roles = await _memberships.GetActiveRolesAsync(_currentUser.UserId, orgId, cancellationToken);
+        if (Permissions.Grants(roles, Permissions.CoursesView))
+            return new(course, null, true, null);
+
+        if (course.Status is CourseStatus.Draft or CourseStatus.Suspended)
+            return new(null, null, false, Result<bool>.NotFound("Course not found."));
+
+        var enrollment = await _platform.Enrollments
+            .FirstOrDefaultAsync(e => e.UserId == _currentUser.UserId && e.CourseId == courseId && e.OrganizationId == orgId, cancellationToken);
+        // Outsiders cannot even confirm the course exists; members get a clearer answer.
+        if ((enrollment is null || enrollment.Status != EnrollmentStatus.Active) && roles == OrganizationRole.None)
+            return new(null, null, false, Result<bool>.NotFound("Course not found."));
+        if (enrollment is null || enrollment.Status != EnrollmentStatus.Active)
+            return new(null, null, false, Result<bool>.Failure(ResultErrorType.Forbidden, "You are not enrolled in this course."));
+        if (!enrollment.IsUsable(DateTime.UtcNow))
+            return new(null, null, false, Result<bool>.Failure(ResultErrorType.Forbidden, "Your access to this course has expired."));
+
+        return new(course, enrollment, false, null);
+    }
+
+    private static IReadOnlyDictionary<Guid, LessonAccessState> EvaluateLocks(
+        Course course, Enrollment? enrollment, bool isPreview, IReadOnlyDictionary<Guid, LessonProgress> progress)
+    {
+        if (isPreview)
+            return LessonAccess.VisibleLessons(course).ToDictionary(l => l.Id, l => new LessonAccessState(l.Id, false, LockReason.None, null));
+
+        var completed = progress.Values.Where(p => p.IsCompleted).Select(p => p.LessonId).ToHashSet();
+        return LessonAccess.Evaluate(course, enrollment!.StartsAtUtc, completed, DateTime.UtcNow);
+    }
+
+    private async Task<Dictionary<Guid, LessonProgress>> LoadProgressAsync(Guid courseId, CancellationToken cancellationToken) =>
+        await _tenant.LessonProgress.AsNoTracking()
+            .Where(p => p.UserId == _currentUser.UserId && p.CourseId == courseId)
+            .ToDictionaryAsync(p => p.LessonId, cancellationToken);
+
+    private Task<Guid?> CourseIdOfLessonAsync(Guid lessonId, CancellationToken cancellationToken) =>
+        _tenant.CourseLessons.AsNoTracking()
+            .Where(l => l.Id == lessonId)
+            .Select(l => (Guid?)l.Chapter.CourseId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+    private Enrollment UpsertEnrollment(Enrollment? enrollment, Guid userId, Guid orgId, Course course, EnrollmentSource source)
+    {
+        var now = DateTime.UtcNow;
+        if (enrollment is null)
+        {
+            enrollment = new Enrollment { UserId = userId, OrganizationId = orgId, CourseId = course.Id };
+            _platform.Enrollments.Add(enrollment);
+        }
+
+        // New or renewed access starts now (expired/revoked enrollments are reused: one row per student and course).
+        enrollment.CourseTitle = course.Title;
+        enrollment.Source = source;
+        enrollment.Status = EnrollmentStatus.Active;
+        enrollment.StartsAtUtc = now;
+        enrollment.ExpiresAtUtc = course.AccessExpiryPolicy == AccessExpiryPolicy.Limited && course.AccessDurationDays is > 0
+            ? now.AddDays(course.AccessDurationDays.Value)
+            : null;
+        return enrollment;
+    }
+
+    private static string DescribeLock(LessonAccessState state) => state.Reason switch
+    {
+        LockReason.CourseNotStarted => "This course has not started yet.",
+        LockReason.DripSchedule => $"This lesson unlocks on {state.UnlocksAtUtc:yyyy-MM-dd}.",
+        LockReason.PreviousLessonRequired => "Complete the previous lesson first.",
+        _ => "This lesson is locked."
+    };
+
+    private static Result<T> Fail<T>(Result failure) =>
+        Result<T>.Failure(failure.ErrorType, failure.Errors);
+}

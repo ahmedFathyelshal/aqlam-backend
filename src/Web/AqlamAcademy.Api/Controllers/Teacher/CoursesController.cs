@@ -136,6 +136,25 @@ public class CoursesController : ControllerBase
         return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
     }
 
+    /// <summary>Students enrolled in the course (staff view).</summary>
+    [HttpGet("{id}/enrollments")]
+    [HasPermission(Permissions.MembersView)]
+    public async Task<IActionResult> Enrollments(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new AqlamAcademy.Application.Features.Learning.ListEnrollmentsQuery(id), cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
+    /// <summary>Enrolls existing members (by username) into the course; per-user results.</summary>
+    [HttpPost("{id}/enrollments")]
+    [HasPermission(Permissions.MembersManage)]
+    public async Task<IActionResult> Enroll(Guid id, [FromBody] EnrollMembersRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new AqlamAcademy.Application.Features.Learning.EnrollMembersCommand(id, request.UserNames), cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
+    public record EnrollMembersRequest(IReadOnlyList<string> UserNames);
     public record SyncCurriculumRequest(int? ExpectedVersion, string? SyllabusRequirements, IReadOnlyList<SyncChapterInput>? Chapters);
     public record ChangeStatusRequest(AqlamAcademy.Domain.Enums.CourseStatus Status);
     public record SetVisibilityRequest(AqlamAcademy.Domain.Enums.CourseVisibility Visibility);
