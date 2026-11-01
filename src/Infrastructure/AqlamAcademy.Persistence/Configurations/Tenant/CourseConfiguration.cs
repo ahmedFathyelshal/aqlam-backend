@@ -1,16 +1,22 @@
 using AqlamAcademy.Domain.Courses;
+using Finbuckle.MultiTenant.EntityFrameworkCore.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using AqlamAcademy.Infrastructure.Persistence.Constants;
 
-namespace AqlamAcademy.Infrastructure.Persistence.Configurations;
+namespace AqlamAcademy.Infrastructure.Persistence.Configurations.Tenant;
 
 public class CourseConfiguration : IEntityTypeConfiguration<Course>
 {
     public void Configure(EntityTypeBuilder<Course> builder)
     {
         builder.ToTable("Courses", SchemaNames.Courses);
+
+        // Adds the TenantId shadow property and the tenant query filter.
+        builder.IsMultiTenant();
+        builder.Property<string>("TenantId").HasMaxLength(64);
+        builder.HasIndex("TenantId");
 
         builder.HasKey(x => x.Id);
 
@@ -24,24 +30,12 @@ public class CourseConfiguration : IEntityTypeConfiguration<Course>
 
         // Map Enum to integer Status column
         builder.Property(x => x.Status).HasConversion<int>();
+        builder.Property(x => x.Visibility).HasConversion<int>();
 
-        // Relationship mapping to Lookups
-        builder.HasOne(x => x.Stage)
-               .WithMany()
-               .HasForeignKey(x => x.StageId)
-               .OnDelete(DeleteBehavior.Restrict);
+        builder.Property(x => x.CreatedByUserId).IsRequired();
 
-        builder.HasOne(x => x.Grade)
-               .WithMany()
-               .HasForeignKey(x => x.GradeId)
-               .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasOne(x => x.Subject)
-               .WithMany()
-               .HasForeignKey(x => x.SubjectId)
-               .OnDelete(DeleteBehavior.Restrict);
-
-        // Required Teacher mapping
-        builder.Property(x => x.TeacherId).IsRequired();
+        // Stage/Grade/Subject reference platform lookups: no foreign keys across stores
+        // (a dedicated tenant database does not contain the lookup tables).
+        builder.HasIndex(x => new { x.StageId, x.GradeId, x.SubjectId });
     }
 }

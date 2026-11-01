@@ -10,7 +10,7 @@
     <PackageReference Include="Mapster.DependencyInjection" Version="10.0.7" />
     <PackageReference Include="MediatR" Version="14.1.0" />
 
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.6" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
   </ItemGroup>
 
   <PropertyGroup>

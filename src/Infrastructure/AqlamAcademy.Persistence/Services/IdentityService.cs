@@ -6,6 +6,10 @@ using AqlamAcademy.Domain.Enums;
 using AqlamAcademy.Domain.Students;
 using AqlamAcademy.Domain.Staff;
 using AqlamAcademy.Infrastructure.Persistence.Identity;
+using AqlamAcademy.Domain.Organizations;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using System.Text.RegularExpressions;
 
 namespace AqlamAcademy.Infrastructure.Persistence.Services;
 
@@ -16,19 +20,22 @@ public class IdentityService : IIdentityService
     private readonly ILogger<IdentityService> _logger;
     private readonly ITokenService _tokenService;
     private readonly ILocalizationService _localizer;
+    private readonly CellSettings _cell;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager,
         ApplicationDbContext context,
         ILogger<IdentityService> logger,
         ITokenService tokenService,
-        ILocalizationService localizer)
+        ILocalizationService localizer,
+        IOptions<CellSettings> cellSettings)
     {
         _userManager = userManager;
         _context = context;
         _logger = logger;
         _tokenService = tokenService;
         _localizer = localizer;
+        _cell = cellSettings.Value;
     }
 
     public async Task<bool> IsUserNameUniqueAsync(string userName)
@@ -127,6 +134,49 @@ public class IdentityService : IIdentityService
     }
 
 
+    /// <summary>
+    /// Every teacher owns a personal organization (their academy). It is created with the account so the
+    /// teacher can start building courses immediately; the word "organization" is never shown to them.
+    /// </summary>
+    private async Task AddPersonalOrganizationAsync(ApplicationUser user)
+    {
+        var organization = new Organization
+        {
+            Name = user.UserName!,
+            Slug = await GenerateUniqueSlugAsync(user.UserName!),
+            Type = OrganizationType.Personal,
+            CountryCode = _cell.DefaultCountryCode,
+            Currency = _cell.DefaultCurrency,
+            TimeZone = _cell.DefaultTimeZone,
+            PublicPublishing = PublicPublishingPolicy.Allowed
+        };
+
+        organization.Memberships.Add(new Membership
+        {
+            UserId = user.Id,
+            Roles = OrganizationRole.Owner | OrganizationRole.Teacher,
+            Source = MembershipSource.Owner
+        });
+
+        _context.Organizations.Add(organization);
+    }
+
+    private async Task<string> GenerateUniqueSlugAsync(string source)
+    {
+        var baseSlug = Regex.Replace(source.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
+        if (baseSlug.Length < 3)
+            baseSlug = $"academy-{baseSlug}".Trim('-');
+        if (baseSlug.Length > 50)
+            baseSlug = baseSlug[..50].Trim('-');
+
+        var slug = baseSlug;
+        var suffix = 2;
+        while (await _context.Organizations.IgnoreQueryFilters().AnyAsync(o => o.Slug == slug))
+            slug = $"{baseSlug}-{suffix++}";
+
+        return slug;
+    }
+
     private async Task<Result<Guid>> AssignRoleAndProfileAsync(ApplicationUser user, UserType userType)
     {
         string roleName = userType switch
@@ -149,6 +199,7 @@ public class IdentityService : IIdentityService
         {
             case UserType.Teacher:
                 _context.TeacherProfiles.Add(new TeacherProfile { UserId = user.Id });
+                await AddPersonalOrganizationAsync(user);
                 break;
             case UserType.Student:
                 _context.StudentProfiles.Add(new StudentProfile { UserId = user.Id });

@@ -15,6 +15,11 @@ using AqlamAcademy.Application.Common.Interfaces;
 using AqlamAcademy.Infrastructure.Persistence;
 using AqlamAcademy.Localization;
 using AqlamAcademy.Api.Infrastructure;
+using AqlamAcademy.Api.Infrastructure.Authorization;
+using AqlamAcademy.Infrastructure.Persistence.MultiTenancy;
+using Finbuckle.MultiTenant.AspNetCore.Extensions;
+using Finbuckle.MultiTenant.Extensions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AqlamAcademy.Api.Infrastructure.DependencyInjection;
 
@@ -78,6 +83,24 @@ public static class PresentationDependencyInjection
             };
         });
 
+        // 3b. Multi-tenancy: resolve the organization by host (subdomain or custom domain) first,
+        // then by the {org} route value on the main domain. Resolution never grants access by itself.
+        var baseDomain = configuration["Cell:BaseDomain"] ?? "localhost";
+        services.AddMultiTenant<AqlamTenantInfo>()
+            .WithDelegateStrategy<HttpContext, AqlamTenantInfo>(httpContext =>
+            {
+                var host = httpContext.Request.Host.Host.ToLowerInvariant();
+                var isMainDomain = host == baseDomain || host == "localhost" || System.Net.IPAddress.TryParse(host, out _);
+                return Task.FromResult(isMainDomain ? null! : host);
+            })
+            .WithRouteStrategy("org", false)
+            .WithStore<OrganizationTenantStore>(ServiceLifetime.Scoped);
+
+        // 3c. Permission-based authorization inside the resolved organization
+        services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+        services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+        services.AddSingleton<IAuthorizationMiddlewareResultHandler, NotFoundForNonMembersResultHandler>();
+
         // 4. CORS
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
         services.AddCors(options =>
@@ -126,8 +149,13 @@ public static class PresentationDependencyInjection
             SupportedUICultures = supportedCultures
         });
 
+        app.UseRouting();
+
         // 5. CORS Middleware
         app.UseCors(CorsPolicy);
+
+        // Resolve the tenant before authentication/authorization so policies can use it
+        app.UseMultiTenant();
 
         // 6. Authentication & Authorization Middleware
         app.UseAuthentication();

@@ -7,11 +7,13 @@ public class ApplicationDbInitializer
 {
     private readonly ILogger<ApplicationDbInitializer> _logger;
     private readonly ApplicationDbContext _context;
+    private readonly TenantDbContext _tenantContext;
 
-    public ApplicationDbInitializer(ILogger<ApplicationDbInitializer> logger, ApplicationDbContext context)
+    public ApplicationDbInitializer(ILogger<ApplicationDbInitializer> logger, ApplicationDbContext context, TenantDbContext tenantContext)
     {
         _logger = logger;
         _context = context;
+        _tenantContext = tenantContext;
     }
 
     public async Task InitializeAsync()
@@ -21,6 +23,9 @@ public class ApplicationDbInitializer
             if (_context.Database.IsRelational())
             {
                 await _context.Database.MigrateAsync();
+
+                // Tenant tables in the shared database. Dedicated-tier databases get their own migration run (P2).
+                await _tenantContext.Database.MigrateAsync();
             }
         }
         catch (Exception ex)
@@ -77,21 +82,9 @@ public class ApplicationDbInitializer
                 await using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    // Attempt Identity Insert if supported (SQL Server)
-                    if (_context.Database.IsSqlServer())
-                    {
-                        var tableName = _context.Model.FindEntityType(typeof(TEntity))?.GetTableName();
-                        await _context.Database.ExecuteSqlRawAsync($"SET IDENTITY_INSERT {tableName} ON");
+                    // PostgreSQL accepts explicit ids for identity columns
                         await dbSet.AddRangeAsync(items);
                         await _context.SaveChangesAsync();
-                        await _context.Database.ExecuteSqlRawAsync($"SET IDENTITY_INSERT {tableName} OFF");
-                    }
-                    else
-                    {
-                        // PostgreSQL handles it gracefully if IDs are provided
-                        await dbSet.AddRangeAsync(items);
-                        await _context.SaveChangesAsync();
-                    }
                     
                     await transaction.CommitAsync();
                 }

@@ -20,7 +20,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await _db.StartAsync();
 
         using var rsa = RSA.Create(2048);
-        Environment.SetEnvironmentVariable("DatabaseSettings__Provider", "postgresql");
+
         Environment.SetEnvironmentVariable("DatabaseSettings__ConnectionString", _db.GetConnectionString());
         Environment.SetEnvironmentVariable("JwtSettings__Rsa__PrivateKeyXml", rsa.ToXmlString(includePrivateParameters: true));
         Environment.SetEnvironmentVariable("RateLimiting__AuthPermitsPerMinute", "1000");

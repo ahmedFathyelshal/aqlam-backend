@@ -9,9 +9,9 @@ namespace AqlamAcademy.Infrastructure.Persistence.Services;
 
 public class CourseService : ICourseService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly TenantDbContext _context;
 
-    public CourseService(ApplicationDbContext context)
+    public CourseService(TenantDbContext context)
     {
         _context = context;
     }

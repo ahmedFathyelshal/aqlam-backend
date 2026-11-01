@@ -1,5 +1,7 @@
 using AqlamAcademy.Application.Features.Teacher.Courses.Commands;
 using AqlamAcademy.Api.Infrastructure;
+using AqlamAcademy.Api.Infrastructure.Authorization;
+using AqlamAcademy.Application.Common.Authorization;
 using AqlamAcademy.Application.Features.Teacher.Courses.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -7,9 +9,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AqlamAcademy.Api.Controllers.Teacher;
 
-[Route("api/teacher/[controller]")]
+/// <summary>
+/// Course authoring inside an organization. The organization comes from the {org} route value on the
+/// main domain, or from the host on an organization's own (sub)domain.
+/// </summary>
+[Route("api/orgs/{org}/courses")]
+[Route("api/courses")]
 [ApiController]
-[Authorize(Roles = "Teacher")]
+[HasPermission(Permissions.CoursesEdit)]
 public class CoursesController : ControllerBase
 {
     private readonly IMediator _mediator;

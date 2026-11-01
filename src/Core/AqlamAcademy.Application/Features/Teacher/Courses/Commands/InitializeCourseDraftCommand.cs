@@ -36,7 +36,7 @@ public class InitializeCourseDraftCommandHandler : IRequestHandler<InitializeCou
             SubjectId = request.SubjectId,
             Slug = Guid.NewGuid().ToString("N"),
             Status = CourseStatus.Draft,
-            TeacherId = _currentUser.UserId
+            CreatedByUserId = _currentUser.UserId
         };
 
         var draft = await _courseService.CreateDraftAsync(course, cancellationToken);
