@@ -73,6 +73,7 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddScoped<ILookupService, LookupService>();
         services.AddScoped<ICourseService, CourseService>();
+        services.AddScoped<IOrganizationPolicyReader, OrganizationPolicyReader>();
         services.AddScoped<IMembershipService, MembershipService>();
         services.AddScoped<PersonalOrganizationFactory>();
         services.AddScoped<IOrganizationAdminService, OrganizationAdminService>();

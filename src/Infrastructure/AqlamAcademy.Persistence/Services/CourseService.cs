@@ -1,5 +1,8 @@
 using AqlamAcademy.Application.Common.Interfaces;
+using AqlamAcademy.Application.Common.Models;
+using AqlamAcademy.Application.Features.Teacher.Courses.Commands;
 using AqlamAcademy.Application.Features.Teacher.Courses.DTOs;
+using AqlamAcademy.Domain.Common;
 using AqlamAcademy.Domain.Courses;
 using AqlamAcademy.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +12,8 @@ namespace AqlamAcademy.Infrastructure.Persistence.Services;
 
 public class CourseService : ICourseService
 {
+    private const string ConcurrentEditMessage = "The curriculum was changed by someone else. Reload to see the latest version.";
+
     private readonly TenantDbContext _context;
 
     public CourseService(TenantDbContext context)
@@ -31,17 +36,26 @@ public class CourseService : ICourseService
 
     public async Task<CourseDraftDto?> GetDraftByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        var course = await _context.Courses
-            .Include(c => c.Chapters)
-                .ThenInclude(ch => ch.Lessons)
-                    .ThenInclude(l => l.Resources)
-            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
-
-        if (course == null)
-            return null;
-
-        return course.Adapt<CourseDraftDto>();
+        var course = await LoadTreeAsync(id, tracking: false, cancellationToken);
+        return course?.Adapt<CourseDraftDto>();
     }
+
+    public async Task<IReadOnlyList<CourseSummaryDto>> ListAsync(CancellationToken cancellationToken) =>
+        await _context.Courses.AsNoTracking()
+            .OrderByDescending(c => c.LastModifiedAtUtc ?? c.CreatedAtUtc)
+            .Select(c => new CourseSummaryDto(
+                c.Id,
+                c.Title,
+                c.Status.ToString(),
+                c.Visibility.ToString(),
+                c.CurriculumId,
+                c.GradeId,
+                c.SubjectId,
+                c.Chapters.Count(),
+                c.Chapters.SelectMany(ch => ch.Lessons).Count(),
+                c.CreatedAtUtc,
+                c.LastModifiedAtUtc))
+            .ToListAsync(cancellationToken);
 
     public async Task UpdateIdentityAsync(Guid id, string title, int? curriculumId, int? stageId, int? gradeId, int? subjectId, CancellationToken cancellationToken)
     {
@@ -53,6 +67,7 @@ public class CourseService : ICourseService
         course.StageId = stageId;
         course.GradeId = gradeId;
         course.SubjectId = subjectId;
+        course.LastModifiedAtUtc = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
     }
@@ -67,6 +82,7 @@ public class CourseService : ICourseService
         course.CodeActivationOnly = codeActivationOnly;
         course.AccessExpiryPolicy = expiryPolicy;
         course.AccessDurationDays = accessDurationDays;
+        course.LastModifiedAtUtc = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
     }
@@ -79,92 +95,241 @@ public class CourseService : ICourseService
         course.Subtitle = subtitle;
         course.ThumbnailUrl = thumbnailUrl;
         course.PromoVideoUrl = promoVideoUrl;
+        course.LastModifiedAtUtc = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task UpdateCurriculumAsync(Guid id, string? syllabusRequirements, ICollection<CourseChapterDto> chapters, CancellationToken cancellationToken)
+    public async Task<Result<CourseDraftDto>> SyncCurriculumAsync(SyncCurriculumCommand command, CancellationToken cancellationToken)
     {
-        _context.ChangeTracker.Clear();
+        var course = await LoadTreeAsync(command.Id, tracking: true, cancellationToken);
+        if (course is null)
+            return Result<CourseDraftDto>.NotFound("Course not found.");
 
-        // Step 1: Bulk-delete existing children directly in the database (child-first for FK order).
-        await _context.Set<LessonResource>()
-            .Where(r => r.Lesson.Chapter.CourseId == id)
-            .ExecuteDeleteAsync(cancellationToken);
+        if (command.ExpectedVersion is { } expected && expected != course.CurriculumVersion)
+            return Result<CourseDraftDto>.Conflict(ConcurrentEditMessage);
 
-        await _context.Set<CourseLesson>()
-            .Where(l => l.Chapter.CourseId == id)
-            .ExecuteDeleteAsync(cancellationToken);
+        var chaptersById = course.Chapters.ToDictionary(c => c.Id);
+        var lessonsById = course.Chapters.SelectMany(c => c.Lessons).ToDictionary(l => l.Id);
 
-        await _context.Set<CourseChapter>()
-            .Where(c => c.CourseId == id)
-            .ExecuteDeleteAsync(cancellationToken);
+        // Validate every referenced id before changing anything, so a bad request never half-applies.
+        var unknownIds = FindUnknownIds(command, chaptersById, lessonsById);
+        if (unknownIds.Count > 0)
+            return Result<CourseDraftDto>.Failure(unknownIds);
 
-        // Step 2: Update course property directly in the database (no entity load needed).
-        await _context.Courses
-            .Where(c => c.Id == id)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(c => c.SyllabusRequirements, syllabusRequirements)
-                .SetProperty(c => c.LastModifiedAtUtc, DateTime.UtcNow),
-            cancellationToken);
+        var now = DateTime.UtcNow;
+        var keptChapterIds = new HashSet<Guid>();
+        var keptLessonIds = new HashSet<Guid>();
 
-        // Step 3: Add new chapters directly to the DbSet (not via navigation property).
-        foreach (var chapterDto in chapters)
+        for (var chapterIndex = 0; chapterIndex < command.Chapters.Count; chapterIndex++)
         {
-            var chapter = new CourseChapter
+            var chapterInput = command.Chapters[chapterIndex];
+            var chapter = chapterInput.Id is { } chapterId ? chaptersById[chapterId] : AddChapter(course);
+
+            chapter.Title = chapterInput.Title.Trim();
+            chapter.Order = chapterIndex;
+            chapter.LastModifiedAtUtc = now;
+            keptChapterIds.Add(chapter.Id);
+
+            if (chapterInput.Lessons is null)
             {
-                Title = chapterDto.Title,
-                Order = chapterDto.Order,
-                CourseId = id
-            };
-
-            foreach (var lessonDto in chapterDto.Lessons)
-            {
-                if (!Enum.TryParse<LessonType>(lessonDto.Type, ignoreCase: true, out var lessonType))
-                {
-                    lessonType = LessonType.Video;
-                }
-
-                var lesson = new CourseLesson
-                {
-                    Title = lessonDto.Title,
-                    Order = lessonDto.Order,
-                    IsPublished = lessonDto.IsPublished,
-                    Type = lessonType,
-                    DurationInMinutes = lessonDto.DurationInMinutes,
-                    IsFreePreview = lessonDto.IsFreePreview,
-                    VideoUrl = lessonDto.VideoUrl,
-                    Summary = lessonDto.Summary,
-                    Content = lessonDto.Content,
-                    UnlockDaysAfterEnrollment = lessonDto.UnlockDaysAfterEnrollment,
-                    RequirePreviousLessonCompletion = lessonDto.RequirePreviousLessonCompletion
-                };
-
-                foreach (var resourceDto in lessonDto.Resources)
-                {
-                    if (!Enum.TryParse<ResourceType>(resourceDto.Type, ignoreCase: true, out var resourceType))
-                    {
-                        resourceType = ResourceType.File;
-                    }
-
-                    lesson.Resources.Add(new LessonResource
-                    {
-                        DisplayName = resourceDto.DisplayName,
-                        ResourceUrl = resourceDto.ResourceUrl,
-                        Type = resourceType,
-                        IsDownloadable = resourceDto.IsDownloadable
-                    });
-                }
-
-                chapter.Lessons.Add(lesson);
+                // "Leave unchanged": keep the chapter's current lessons.
+                keptLessonIds.UnionWith(chapter.Lessons.Select(l => l.Id));
+                continue;
             }
 
-            _context.Set<CourseChapter>().Add(chapter);
+            for (var lessonIndex = 0; lessonIndex < chapterInput.Lessons.Count; lessonIndex++)
+            {
+                var lessonInput = chapterInput.Lessons[lessonIndex];
+                var lesson = lessonInput.Id is { } lessonId ? lessonsById[lessonId] : new CourseLesson();
+
+                if (lessonInput.Id is null)
+                {
+                    chapter.Lessons.Add(lesson);
+                    _context.CourseLessons.Add(lesson); // explicit: the key is pre-set, so EF must not assume it exists
+                }
+                else if (lesson.ChapterId != chapter.Id)
+                {
+                    // Moved to another chapter: same lesson, same id (progress stays attached).
+                    lesson.Chapter.Lessons.Remove(lesson);
+                    lesson.Chapter = chapter;
+                    chapter.Lessons.Add(lesson);
+                }
+
+                ApplyLesson(lesson, lessonInput, lessonIndex, now);
+                keptLessonIds.Add(lesson.Id);
+            }
         }
 
+        // Anything no longer in the tree is soft-deleted (history such as progress keeps its references).
+        foreach (var chapter in course.Chapters.Where(c => !keptChapterIds.Contains(c.Id)).ToList())
+            MarkDeleted(chapter, now);
+        foreach (var lesson in course.Chapters.SelectMany(c => c.Lessons).Where(l => !keptLessonIds.Contains(l.Id)).ToList())
+        {
+            MarkDeleted(lesson, now);
+            foreach (var resource in lesson.Resources)
+                MarkDeleted(resource, now);
+        }
+
+        course.SyllabusRequirements = command.SyllabusRequirements;
+        course.CurriculumVersion++;
+        course.LastModifiedAtUtc = now;
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Result<CourseDraftDto>.Conflict(ConcurrentEditMessage);
+        }
+
+        _context.ChangeTracker.Clear();
+        return Result<CourseDraftDto>.Success((await GetDraftByIdAsync(course.Id, cancellationToken))!);
+    }
+
+    public async Task<IReadOnlyList<string>?> GetPublishIssuesAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var course = await LoadTreeAsync(id, tracking: false, cancellationToken);
+        return course is null ? null : CourseLifecycle.GetPublishIssues(course);
+    }
+
+    public async Task<Result<CourseDraftDto>> ChangeStatusAsync(Guid id, CourseStatus status, CancellationToken cancellationToken)
+    {
+        var course = await LoadTreeAsync(id, tracking: true, cancellationToken);
+        if (course is null)
+            return Result<CourseDraftDto>.NotFound("Course not found.");
+
+        if (course.Status == status)
+            return Result<CourseDraftDto>.Success(course.Adapt<CourseDraftDto>());
+
+        if (!CourseLifecycle.CanTransition(course.Status, status))
+            return Result<CourseDraftDto>.Conflict($"A {course.Status} course cannot be moved to {status}.");
+
+        if (CourseLifecycle.RequiresCompleteCourse(status))
+        {
+            var issues = CourseLifecycle.GetPublishIssues(course);
+            if (issues.Count > 0)
+                return Result<CourseDraftDto>.Failure(issues);
+        }
+
+        course.Status = status;
+        course.LastModifiedAtUtc = DateTime.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
+
+        return Result<CourseDraftDto>.Success(course.Adapt<CourseDraftDto>());
+    }
+
+    public async Task<Result<CourseDraftDto>> SetVisibilityAsync(Guid id, CourseVisibility visibility, CancellationToken cancellationToken)
+    {
+        var course = await LoadTreeAsync(id, tracking: true, cancellationToken);
+        if (course is null)
+            return Result<CourseDraftDto>.NotFound("Course not found.");
+
+        course.Visibility = visibility;
+        course.LastModifiedAtUtc = DateTime.UtcNow;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Result<CourseDraftDto>.Success(course.Adapt<CourseDraftDto>());
+    }
+
+    private Task<Course?> LoadTreeAsync(Guid id, bool tracking, CancellationToken cancellationToken)
+    {
+        var query = _context.Courses
+            .Include(c => c.Chapters)
+                .ThenInclude(ch => ch.Lessons)
+                    .ThenInclude(l => l.Resources)
+            .AsSplitQuery();
+
+        return (tracking ? query : query.AsNoTracking()).FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+    }
+
+    private static List<string> FindUnknownIds(
+        SyncCurriculumCommand command,
+        Dictionary<Guid, CourseChapter> chaptersById,
+        Dictionary<Guid, CourseLesson> lessonsById)
+    {
+        var errors = new List<string>();
+
+        foreach (var chapter in command.Chapters)
+        {
+            if (chapter.Id is { } chapterId && !chaptersById.ContainsKey(chapterId))
+                errors.Add($"Chapter {chapterId} does not belong to this course.");
+
+            foreach (var lesson in chapter.Lessons ?? [])
+            {
+                if (lesson.Id is { } lessonId && !lessonsById.ContainsKey(lessonId))
+                {
+                    errors.Add($"Lesson {lessonId} does not belong to this course.");
+                    continue;
+                }
+
+                var knownResources = lesson.Id is { } existingId
+                    ? lessonsById[existingId].Resources.Select(r => r.Id).ToHashSet()
+                    : [];
+                foreach (var resource in lesson.Resources ?? [])
+                {
+                    if (resource.Id is { } resourceId && !knownResources.Contains(resourceId))
+                        errors.Add($"Resource {resourceId} does not belong to lesson \"{lesson.Title}\".");
+                }
+            }
+        }
+
+        return errors;
+    }
+
+    private CourseChapter AddChapter(Course course)
+    {
+        var chapter = new CourseChapter { CourseId = course.Id };
+        course.Chapters.Add(chapter);
+        _context.CourseChapters.Add(chapter);
+        return chapter;
+    }
+
+    private void ApplyLesson(CourseLesson lesson, SyncLessonInput input, int order, DateTime now)
+    {
+        lesson.Title = input.Title.Trim();
+        lesson.Order = order;
+        lesson.Type = Enum.Parse<LessonType>(input.Type, ignoreCase: true);
+        lesson.DurationInMinutes = input.DurationInMinutes;
+        lesson.IsFreePreview = input.IsFreePreview;
+        lesson.IsPublished = input.IsPublished;
+        lesson.VideoUrl = input.VideoUrl;
+        lesson.Summary = input.Summary;
+        lesson.Content = input.Content;
+        lesson.UnlockDaysAfterEnrollment = input.UnlockDaysAfterEnrollment;
+        lesson.RequirePreviousLessonCompletion = input.RequirePreviousLessonCompletion;
+        lesson.LastModifiedAtUtc = now;
+
+        if (input.Resources is null)
+            return; // leave resources unchanged
+
+        var existing = lesson.Resources.ToDictionary(r => r.Id);
+        var kept = new HashSet<Guid>();
+        foreach (var resourceInput in input.Resources)
+        {
+            var resource = resourceInput.Id is { } resourceId ? existing[resourceId] : new LessonResource();
+            if (resourceInput.Id is null)
+            {
+                lesson.Resources.Add(resource);
+                _context.LessonResources.Add(resource);
+            }
+
+            resource.DisplayName = resourceInput.DisplayName.Trim();
+            resource.ResourceUrl = resourceInput.ResourceUrl.Trim();
+            resource.Type = Enum.Parse<ResourceType>(resourceInput.Type, ignoreCase: true);
+            resource.IsDownloadable = resourceInput.IsDownloadable;
+            resource.LastModifiedAtUtc = now;
+            kept.Add(resource.Id);
+        }
+
+        foreach (var removed in existing.Values.Where(r => !kept.Contains(r.Id)))
+            MarkDeleted(removed, now);
+    }
+
+    private static void MarkDeleted(ISoftDelete entity, DateTime now)
+    {
+        entity.IsDeleted = true;
+        entity.DeletedAtUtc = now;
     }
 }
-
-
-

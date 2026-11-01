@@ -31,6 +31,7 @@ public class CourseConfiguration : IEntityTypeConfiguration<Course>
         // Map Enum to integer Status column
         builder.Property(x => x.Status).HasConversion<int>();
         builder.Property(x => x.Visibility).HasConversion<int>();
+        builder.Property(x => x.CurriculumVersion).IsConcurrencyToken();
 
         builder.Property(x => x.CreatedByUserId).IsRequired();
 
