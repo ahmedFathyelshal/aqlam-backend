@@ -5,7 +5,7 @@ using MediatR;
 
 namespace AqlamAcademy.Application.Features.Teacher.Courses.Commands;
 
-public record UpdateCourseIdentityCommand(Guid Id, string Title, int? StageId, int? GradeId, int? SubjectId) : IRequest<Result<CourseDraftDto>>;
+public record UpdateCourseIdentityCommand(Guid Id, string Title, int? CurriculumId, int? StageId, int? GradeId, int? SubjectId) : IRequest<Result<CourseDraftDto>>;
 
 public class UpdateCourseIdentityCommandHandler : IRequestHandler<UpdateCourseIdentityCommand, Result<CourseDraftDto>>
 {
@@ -24,7 +24,7 @@ public class UpdateCourseIdentityCommandHandler : IRequestHandler<UpdateCourseId
         if (course == null)
             return Result<CourseDraftDto>.NotFound("Course not found.");
 
-        await _courseService.UpdateIdentityAsync(request.Id, request.Title, request.StageId, request.GradeId, request.SubjectId, cancellationToken);
+        await _courseService.UpdateIdentityAsync(request.Id, request.Title, request.CurriculumId, request.StageId, request.GradeId, request.SubjectId, cancellationToken);
 
         return Result<CourseDraftDto>.Success(new CourseDraftDto { Id = course.Id });
     }

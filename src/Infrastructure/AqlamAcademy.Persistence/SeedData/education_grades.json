@@ -94,5 +94,861 @@
     "NameAr": "الصف الثالث الثانوي",
     "OrderIndex": 12,
     "IsActive": true
+  },
+  {
+    "Id": 100,
+    "EducationStageId": 4,
+    "NameEn": "KG1",
+    "NameAr": "الروضة الأولى",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 101,
+    "EducationStageId": 4,
+    "NameEn": "KG2",
+    "NameAr": "الروضة الثانية",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 102,
+    "EducationStageId": 5,
+    "NameEn": "Grade 1",
+    "NameAr": "الصف الأول الابتدائي",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 103,
+    "EducationStageId": 5,
+    "NameEn": "Grade 2",
+    "NameAr": "الصف الثاني الابتدائي",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 104,
+    "EducationStageId": 5,
+    "NameEn": "Grade 3",
+    "NameAr": "الصف الثالث الابتدائي",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 105,
+    "EducationStageId": 5,
+    "NameEn": "Grade 4",
+    "NameAr": "الصف الرابع الابتدائي",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 106,
+    "EducationStageId": 5,
+    "NameEn": "Grade 5",
+    "NameAr": "الصف الخامس الابتدائي",
+    "OrderIndex": 5,
+    "IsActive": true
+  },
+  {
+    "Id": 107,
+    "EducationStageId": 5,
+    "NameEn": "Grade 6",
+    "NameAr": "الصف السادس الابتدائي",
+    "OrderIndex": 6,
+    "IsActive": true
+  },
+  {
+    "Id": 108,
+    "EducationStageId": 6,
+    "NameEn": "Grade 1",
+    "NameAr": "الصف الأول الإعدادي",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 109,
+    "EducationStageId": 6,
+    "NameEn": "Grade 2",
+    "NameAr": "الصف الثاني الإعدادي",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 110,
+    "EducationStageId": 6,
+    "NameEn": "Grade 3",
+    "NameAr": "الصف الثالث الإعدادي",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 111,
+    "EducationStageId": 7,
+    "NameEn": "Grade 1",
+    "NameAr": "الصف الأول الثانوي",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 112,
+    "EducationStageId": 7,
+    "NameEn": "Grade 2",
+    "NameAr": "الصف الثاني الثانوي",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 113,
+    "EducationStageId": 7,
+    "NameEn": "Grade 3",
+    "NameAr": "الصف الثالث الثانوي",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 114,
+    "EducationStageId": 10,
+    "NameEn": "KG1",
+    "NameAr": "المستوى الأول",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 115,
+    "EducationStageId": 10,
+    "NameEn": "KG2",
+    "NameAr": "المستوى الثاني",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 116,
+    "EducationStageId": 10,
+    "NameEn": "KG3",
+    "NameAr": "المستوى الثالث (التمهيدي)",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 117,
+    "EducationStageId": 11,
+    "NameEn": "Grade 1",
+    "NameAr": "الصف الأول الابتدائي",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 118,
+    "EducationStageId": 11,
+    "NameEn": "Grade 2",
+    "NameAr": "الصف الثاني الابتدائي",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 119,
+    "EducationStageId": 11,
+    "NameEn": "Grade 3",
+    "NameAr": "الصف الثالث الابتدائي",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 120,
+    "EducationStageId": 11,
+    "NameEn": "Grade 4",
+    "NameAr": "الصف الرابع الابتدائي",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 121,
+    "EducationStageId": 11,
+    "NameEn": "Grade 5",
+    "NameAr": "الصف الخامس الابتدائي",
+    "OrderIndex": 5,
+    "IsActive": true
+  },
+  {
+    "Id": 122,
+    "EducationStageId": 11,
+    "NameEn": "Grade 6",
+    "NameAr": "الصف السادس الابتدائي",
+    "OrderIndex": 6,
+    "IsActive": true
+  },
+  {
+    "Id": 123,
+    "EducationStageId": 12,
+    "NameEn": "Grade 7",
+    "NameAr": "الصف الأول المتوسط",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 124,
+    "EducationStageId": 12,
+    "NameEn": "Grade 8",
+    "NameAr": "الصف الثاني المتوسط",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 125,
+    "EducationStageId": 12,
+    "NameEn": "Grade 9",
+    "NameAr": "الصف الثالث المتوسط",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 126,
+    "EducationStageId": 13,
+    "NameEn": "Grade 10",
+    "NameAr": "الصف الأول الثانوي",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 127,
+    "EducationStageId": 13,
+    "NameEn": "Grade 11",
+    "NameAr": "الصف الثاني الثانوي",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 128,
+    "EducationStageId": 13,
+    "NameEn": "Grade 12",
+    "NameAr": "الصف الثالث الثانوي",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 129,
+    "EducationStageId": 20,
+    "NameEn": "Kindergarten",
+    "NameAr": "الروضة",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 130,
+    "EducationStageId": 20,
+    "NameEn": "Grade 1",
+    "NameAr": "الصف الأول",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 131,
+    "EducationStageId": 20,
+    "NameEn": "Grade 2",
+    "NameAr": "الصف الثاني",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 132,
+    "EducationStageId": 20,
+    "NameEn": "Grade 3",
+    "NameAr": "الصف الثالث",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 133,
+    "EducationStageId": 20,
+    "NameEn": "Grade 4",
+    "NameAr": "الصف الرابع",
+    "OrderIndex": 5,
+    "IsActive": true
+  },
+  {
+    "Id": 134,
+    "EducationStageId": 20,
+    "NameEn": "Grade 5",
+    "NameAr": "الصف الخامس",
+    "OrderIndex": 6,
+    "IsActive": true
+  },
+  {
+    "Id": 135,
+    "EducationStageId": 21,
+    "NameEn": "Grade 6",
+    "NameAr": "الصف السادس",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 136,
+    "EducationStageId": 21,
+    "NameEn": "Grade 7",
+    "NameAr": "الصف السابع",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 137,
+    "EducationStageId": 21,
+    "NameEn": "Grade 8",
+    "NameAr": "الصف الثامن",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 138,
+    "EducationStageId": 22,
+    "NameEn": "Grade 9",
+    "NameAr": "الصف التاسع",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 139,
+    "EducationStageId": 22,
+    "NameEn": "Grade 10",
+    "NameAr": "الصف العاشر",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 140,
+    "EducationStageId": 22,
+    "NameEn": "Grade 11",
+    "NameAr": "الصف الحادي عشر",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 141,
+    "EducationStageId": 22,
+    "NameEn": "Grade 12",
+    "NameAr": "الصف الثاني عشر",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 142,
+    "EducationStageId": 30,
+    "NameEn": "Year 1",
+    "NameAr": "السنة الأولى",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 143,
+    "EducationStageId": 30,
+    "NameEn": "Year 2",
+    "NameAr": "السنة الثانية",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 144,
+    "EducationStageId": 30,
+    "NameEn": "Year 3",
+    "NameAr": "السنة الثالثة",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 145,
+    "EducationStageId": 30,
+    "NameEn": "Year 4",
+    "NameAr": "السنة الرابعة",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 146,
+    "EducationStageId": 30,
+    "NameEn": "Year 5",
+    "NameAr": "السنة الخامسة",
+    "OrderIndex": 5,
+    "IsActive": true
+  },
+  {
+    "Id": 147,
+    "EducationStageId": 30,
+    "NameEn": "Year 6",
+    "NameAr": "السنة السادسة",
+    "OrderIndex": 6,
+    "IsActive": true
+  },
+  {
+    "Id": 148,
+    "EducationStageId": 31,
+    "NameEn": "Year 7",
+    "NameAr": "السنة السابعة",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 149,
+    "EducationStageId": 31,
+    "NameEn": "Year 8",
+    "NameAr": "السنة الثامنة",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 150,
+    "EducationStageId": 31,
+    "NameEn": "Year 9",
+    "NameAr": "السنة التاسعة",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 151,
+    "EducationStageId": 32,
+    "NameEn": "Year 10",
+    "NameAr": "السنة العاشرة",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 152,
+    "EducationStageId": 32,
+    "NameEn": "Year 11",
+    "NameAr": "السنة الحادية عشرة",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 153,
+    "EducationStageId": 33,
+    "NameEn": "Year 12 (AS)",
+    "NameAr": "السنة الثانية عشرة (AS)",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 154,
+    "EducationStageId": 33,
+    "NameEn": "Year 13 (A2)",
+    "NameAr": "السنة الثالثة عشرة (A2)",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 155,
+    "EducationStageId": 40,
+    "NameEn": "Early Years",
+    "NameAr": "السنوات المبكرة",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 156,
+    "EducationStageId": 40,
+    "NameEn": "Grade 1",
+    "NameAr": "الصف الأول",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 157,
+    "EducationStageId": 40,
+    "NameEn": "Grade 2",
+    "NameAr": "الصف الثاني",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 158,
+    "EducationStageId": 40,
+    "NameEn": "Grade 3",
+    "NameAr": "الصف الثالث",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 159,
+    "EducationStageId": 40,
+    "NameEn": "Grade 4",
+    "NameAr": "الصف الرابع",
+    "OrderIndex": 5,
+    "IsActive": true
+  },
+  {
+    "Id": 160,
+    "EducationStageId": 40,
+    "NameEn": "Grade 5",
+    "NameAr": "الصف الخامس",
+    "OrderIndex": 6,
+    "IsActive": true
+  },
+  {
+    "Id": 161,
+    "EducationStageId": 41,
+    "NameEn": "MYP Year 1",
+    "NameAr": "السنة الأولى MYP",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 162,
+    "EducationStageId": 41,
+    "NameEn": "MYP Year 2",
+    "NameAr": "السنة الثانية MYP",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 163,
+    "EducationStageId": 41,
+    "NameEn": "MYP Year 3",
+    "NameAr": "السنة الثالثة MYP",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 164,
+    "EducationStageId": 41,
+    "NameEn": "MYP Year 4",
+    "NameAr": "السنة الرابعة MYP",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 165,
+    "EducationStageId": 41,
+    "NameEn": "MYP Year 5",
+    "NameAr": "السنة الخامسة MYP",
+    "OrderIndex": 5,
+    "IsActive": true
+  },
+  {
+    "Id": 166,
+    "EducationStageId": 42,
+    "NameEn": "DP Year 1",
+    "NameAr": "السنة الأولى DP",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 167,
+    "EducationStageId": 42,
+    "NameEn": "DP Year 2",
+    "NameAr": "السنة الثانية DP",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 168,
+    "EducationStageId": 50,
+    "NameEn": "CP",
+    "NameAr": "CP",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 169,
+    "EducationStageId": 50,
+    "NameEn": "CE1",
+    "NameAr": "CE1",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 170,
+    "EducationStageId": 50,
+    "NameEn": "CE2",
+    "NameAr": "CE2",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 171,
+    "EducationStageId": 50,
+    "NameEn": "CM1",
+    "NameAr": "CM1",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 172,
+    "EducationStageId": 50,
+    "NameEn": "CM2",
+    "NameAr": "CM2",
+    "OrderIndex": 5,
+    "IsActive": true
+  },
+  {
+    "Id": 173,
+    "EducationStageId": 51,
+    "NameEn": "6e",
+    "NameAr": "6e",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 174,
+    "EducationStageId": 51,
+    "NameEn": "5e",
+    "NameAr": "5e",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 175,
+    "EducationStageId": 51,
+    "NameEn": "4e",
+    "NameAr": "4e",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 176,
+    "EducationStageId": 51,
+    "NameEn": "3e",
+    "NameAr": "3e",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 177,
+    "EducationStageId": 52,
+    "NameEn": "2nde",
+    "NameAr": "2nde",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 178,
+    "EducationStageId": 52,
+    "NameEn": "1re",
+    "NameAr": "1re",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 179,
+    "EducationStageId": 52,
+    "NameEn": "Terminale",
+    "NameAr": "Terminale",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 180,
+    "EducationStageId": 60,
+    "NameEn": "Class 1",
+    "NameAr": "الصف الأول",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 181,
+    "EducationStageId": 60,
+    "NameEn": "Class 2",
+    "NameAr": "الصف الثاني",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 182,
+    "EducationStageId": 60,
+    "NameEn": "Class 3",
+    "NameAr": "الصف الثالث",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 183,
+    "EducationStageId": 60,
+    "NameEn": "Class 4",
+    "NameAr": "الصف الرابع",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 184,
+    "EducationStageId": 60,
+    "NameEn": "Class 5",
+    "NameAr": "الصف الخامس",
+    "OrderIndex": 5,
+    "IsActive": true
+  },
+  {
+    "Id": 185,
+    "EducationStageId": 61,
+    "NameEn": "Class 6",
+    "NameAr": "الصف السادس",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 186,
+    "EducationStageId": 61,
+    "NameEn": "Class 7",
+    "NameAr": "الصف السابع",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 187,
+    "EducationStageId": 61,
+    "NameEn": "Class 8",
+    "NameAr": "الصف الثامن",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 188,
+    "EducationStageId": 62,
+    "NameEn": "Class 9",
+    "NameAr": "الصف التاسع",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 189,
+    "EducationStageId": 62,
+    "NameEn": "Class 10",
+    "NameAr": "الصف العاشر",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 190,
+    "EducationStageId": 63,
+    "NameEn": "Class 11",
+    "NameAr": "الصف الحادي عشر",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 191,
+    "EducationStageId": 63,
+    "NameEn": "Class 12",
+    "NameAr": "الصف الثاني عشر",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 192,
+    "EducationStageId": 70,
+    "NameEn": "Class 1",
+    "NameAr": "الصف الأول",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 193,
+    "EducationStageId": 70,
+    "NameEn": "Class 2",
+    "NameAr": "الصف الثاني",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 194,
+    "EducationStageId": 70,
+    "NameEn": "Class 3",
+    "NameAr": "الصف الثالث",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 195,
+    "EducationStageId": 70,
+    "NameEn": "Class 4",
+    "NameAr": "الصف الرابع",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 196,
+    "EducationStageId": 70,
+    "NameEn": "Class 5",
+    "NameAr": "الصف الخامس",
+    "OrderIndex": 5,
+    "IsActive": true
+  },
+  {
+    "Id": 197,
+    "EducationStageId": 71,
+    "NameEn": "Class 6",
+    "NameAr": "الصف السادس",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 198,
+    "EducationStageId": 71,
+    "NameEn": "Class 7",
+    "NameAr": "الصف السابع",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 199,
+    "EducationStageId": 71,
+    "NameEn": "Class 8",
+    "NameAr": "الصف الثامن",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 200,
+    "EducationStageId": 72,
+    "NameEn": "Class 9",
+    "NameAr": "الصف التاسع",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 201,
+    "EducationStageId": 72,
+    "NameEn": "Class 10",
+    "NameAr": "الصف العاشر",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 202,
+    "EducationStageId": 73,
+    "NameEn": "Class 11",
+    "NameAr": "الصف الحادي عشر",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 203,
+    "EducationStageId": 73,
+    "NameEn": "Class 12",
+    "NameAr": "الصف الثاني عشر",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 204,
+    "EducationStageId": 80,
+    "NameEn": "Qudrat (GAT)",
+    "NameAr": "اختبار القدرات العامة",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 205,
+    "EducationStageId": 80,
+    "NameEn": "Tahsili (SAAT)",
+    "NameAr": "الاختبار التحصيلي",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 206,
+    "EducationStageId": 80,
+    "NameEn": "STEP (English)",
+    "NameAr": "اختبار كفايات اللغة الإنجليزية (STEP)",
+    "OrderIndex": 3,
+    "IsActive": true
   }
 ]

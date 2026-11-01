@@ -9,6 +9,7 @@ public record CourseDraftDto
 
     public string? Title { get; init; }
     public string? Slug { get; init; }
+    public int? CurriculumId { get; init; }
     public int? StageId { get; init; }
     public int? GradeId { get; init; }
     public int? SubjectId { get; init; }

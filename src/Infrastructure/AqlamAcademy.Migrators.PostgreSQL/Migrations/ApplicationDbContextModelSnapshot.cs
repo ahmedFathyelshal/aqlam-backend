@@ -48,6 +48,47 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.ToTable("CourseStates", "Lookups");
                 });
 
+            modelBuilder.Entity("AqlamAcademy.Domain.Lookups.Curriculum", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("CountryCode")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Curricula", "Lookups");
+                });
+
             modelBuilder.Entity("AqlamAcademy.Domain.Lookups.EducationGrade", b =>
                 {
                     b.Property<int>("Id")
@@ -84,6 +125,9 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("CurriculumId")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -101,6 +145,8 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CurriculumId");
 
                     b.ToTable("EducationStages", "Lookups");
                 });
@@ -798,6 +844,16 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Navigation("Stage");
                 });
 
+            modelBuilder.Entity("AqlamAcademy.Domain.Lookups.EducationStage", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Lookups.Curriculum", "Curriculum")
+                        .WithMany("Stages")
+                        .HasForeignKey("CurriculumId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Curriculum");
+                });
+
             modelBuilder.Entity("AqlamAcademy.Domain.Organizations.Membership", b =>
                 {
                     b.HasOne("AqlamAcademy.Domain.Organizations.Organization", "Organization")
@@ -932,6 +988,11 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Lookups.Curriculum", b =>
+                {
+                    b.Navigation("Stages");
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Lookups.EducationStage", b =>

@@ -17,15 +17,43 @@ public class LookupService : ILookupService
         _cache = cache;
     }
 
-    public async Task<IEnumerable<EducationStageDto>> GetEducationStagesAsync(CancellationToken cancellationToken)
+    public async Task<IEnumerable<CurriculumDto>> GetCurriculaAsync(string? countryCode, CancellationToken cancellationToken)
     {
-        var cacheKey = "EducationStages";
+        var country = string.IsNullOrWhiteSpace(countryCode) ? null : countryCode.Trim().ToUpperInvariant();
+        var cacheKey = $"Curricula_{country ?? "All"}";
+
+        if (!_cache.TryGetValue(cacheKey, out IEnumerable<CurriculumDto>? curricula))
+        {
+            var query = _context.Curricula.Where(c => c.IsActive);
+            if (country is not null)
+                query = query.Where(c => c.CountryCode == null || c.CountryCode == country);
+
+            curricula = (await query
+                    .OrderBy(c => c.CountryCode == null ? 1 : 0) // national curricula first
+                    .ThenBy(c => c.OrderIndex)
+                    .ToListAsync(cancellationToken))
+                .Select(c => new CurriculumDto(c.Id, c.Code, c.NameEn, c.NameAr, c.CountryCode, c.Kind.ToString(), c.OrderIndex))
+                .ToList();
+
+            _cache.Set(cacheKey, curricula, TimeSpan.FromHours(24));
+        }
+
+        return curricula!;
+    }
+
+    public async Task<IEnumerable<EducationStageDto>> GetEducationStagesAsync(int? curriculumId, CancellationToken cancellationToken)
+    {
+        var cacheKey = $"EducationStages_{curriculumId?.ToString() ?? "All"}";
         if (!_cache.TryGetValue(cacheKey, out IEnumerable<EducationStageDto>? stages))
         {
-            stages = await _context.EducationStages
-                .Where(s => s.IsActive)
-                .OrderBy(s => s.OrderIndex)
-                .Select(s => new EducationStageDto(s.Id, s.NameEn, s.NameAr, s.OrderIndex))
+            var query = _context.EducationStages.Where(s => s.IsActive);
+            if (curriculumId.HasValue)
+                query = query.Where(s => s.CurriculumId == curriculumId.Value);
+
+            stages = await query
+                .OrderBy(s => s.CurriculumId)
+                .ThenBy(s => s.OrderIndex)
+                .Select(s => new EducationStageDto(s.Id, s.CurriculumId, s.NameEn, s.NameAr, s.OrderIndex))
                 .ToListAsync(cancellationToken);
 
             _cache.Set(cacheKey, stages, TimeSpan.FromHours(24));

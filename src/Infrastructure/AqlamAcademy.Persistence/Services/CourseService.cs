@@ -43,12 +43,13 @@ public class CourseService : ICourseService
         return course.Adapt<CourseDraftDto>();
     }
 
-    public async Task UpdateIdentityAsync(Guid id, string title, int? stageId, int? gradeId, int? subjectId, CancellationToken cancellationToken)
+    public async Task UpdateIdentityAsync(Guid id, string title, int? curriculumId, int? stageId, int? gradeId, int? subjectId, CancellationToken cancellationToken)
     {
         var course = await _context.Courses.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
         if (course == null) return;
 
         course.Title = title;
+        course.CurriculumId = curriculumId;
         course.StageId = stageId;
         course.GradeId = gradeId;
         course.SubjectId = subjectId;

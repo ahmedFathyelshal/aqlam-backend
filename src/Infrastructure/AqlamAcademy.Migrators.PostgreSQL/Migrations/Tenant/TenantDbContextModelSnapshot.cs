@@ -46,6 +46,9 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations.Tenant
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("CurriculumId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("timestamp with time zone");
 

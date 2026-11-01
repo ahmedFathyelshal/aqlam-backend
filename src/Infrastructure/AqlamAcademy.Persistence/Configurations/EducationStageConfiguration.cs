@@ -20,5 +20,10 @@ public class EducationStageConfiguration : IEntityTypeConfiguration<EducationSta
         builder.Property(x => x.NameEn).IsRequired().HasMaxLength(100);
         builder.Property(x => x.NameAr).IsRequired().HasMaxLength(100);
 
+        builder.HasOne(x => x.Curriculum)
+               .WithMany(c => c.Stages)
+               .HasForeignKey(x => x.CurriculumId)
+               .OnDelete(DeleteBehavior.Restrict);
+
     }
 }

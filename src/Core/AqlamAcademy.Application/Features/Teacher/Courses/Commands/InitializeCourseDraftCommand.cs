@@ -10,6 +10,7 @@ namespace AqlamAcademy.Application.Features.Teacher.Courses.Commands;
 public class InitializeCourseDraftCommand : IRequest<Result<CourseDraftDto>>
 {
     public string Title { get; set; } = string.Empty;
+    public int? CurriculumId { get; set; }
     public int StageId { get; set; }
     public int GradeId { get; set; }
     public int SubjectId { get; set; }
@@ -31,6 +32,7 @@ public class InitializeCourseDraftCommandHandler : IRequestHandler<InitializeCou
         var course = new Course
         {
             Title = request.Title,
+            CurriculumId = request.CurriculumId,
             StageId = request.StageId,
             GradeId = request.GradeId,
             SubjectId = request.SubjectId,

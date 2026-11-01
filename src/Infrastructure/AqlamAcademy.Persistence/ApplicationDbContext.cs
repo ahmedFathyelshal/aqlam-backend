@@ -26,6 +26,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
 
     // Lookups
+    public DbSet<Curriculum> Curricula => Set<Curriculum>();
     public DbSet<EducationStage> EducationStages => Set<EducationStage>();
     public DbSet<EducationGrade> EducationGrades => Set<EducationGrade>();
     public DbSet<Subject> Subjects => Set<Subject>();

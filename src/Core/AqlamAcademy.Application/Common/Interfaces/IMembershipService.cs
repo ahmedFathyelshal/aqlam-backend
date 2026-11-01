@@ -7,6 +7,7 @@ public record MembershipSummaryDto(
     string Slug,
     string Name,
     string Type,
+    string CountryCode,
     IReadOnlyList<string> Roles);
 
 public interface IMembershipService

@@ -31,6 +31,7 @@ public class Course : BaseEntity
     public Guid CreatedByUserId { get; set; }
 
     // Platform lookup ids (no cross-store foreign keys)
+    public int? CurriculumId { get; set; }
     public int? StageId { get; set; }
     public int? GradeId { get; set; }
     public int? SubjectId { get; set; }

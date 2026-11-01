@@ -15,10 +15,18 @@ public class LookupsController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpGet("education-stages")]
-    public async Task<IActionResult> GetEducationStages(CancellationToken cancellationToken)
+    [HttpGet("curricula")]
+    public async Task<IActionResult> GetCurricula([FromQuery] string? countryCode, CancellationToken cancellationToken)
     {
-        var query = new GetEducationStagesQuery();
+        var result = await _mediator.Send(new GetCurriculaQuery(countryCode), cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("education-stages")]
+    public async Task<IActionResult> GetEducationStages([FromQuery] int? curriculumId, CancellationToken cancellationToken)
+    {
+        var query = new GetEducationStagesQuery(curriculumId);
         var result = await _mediator.Send(query, cancellationToken);
         
         return Ok(result);

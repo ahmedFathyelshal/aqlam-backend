@@ -41,7 +41,7 @@ public class MembershipService : IMembershipService
                      && m.Status == MembershipStatus.Active
                      && m.Organization.Status == OrganizationStatus.Active)
             .OrderBy(m => m.JoinedAtUtc)
-            .Select(m => new { m.OrganizationId, m.Organization.Slug, m.Organization.Name, m.Organization.Type, m.Roles })
+            .Select(m => new { m.OrganizationId, m.Organization.Slug, m.Organization.Name, m.Organization.Type, m.Organization.CountryCode, m.Roles })
             .ToListAsync(cancellationToken);
 
         return memberships
@@ -50,6 +50,7 @@ public class MembershipService : IMembershipService
                 m.Slug,
                 m.Name,
                 m.Type.ToString(),
+                m.CountryCode,
                 Enum.GetValues<OrganizationRole>()
                     .Where(r => r != OrganizationRole.None && m.Roles.HasFlag(r))
                     .Select(r => r.ToString())

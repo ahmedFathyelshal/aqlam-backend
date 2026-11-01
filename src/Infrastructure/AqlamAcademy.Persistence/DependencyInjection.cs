@@ -64,6 +64,7 @@ public static class DependencyInjection
         services.AddScoped<ILookupService, LookupService>();
         services.AddScoped<ICourseService, CourseService>();
         services.AddScoped<IMembershipService, MembershipService>();
+        services.AddScoped<PersonalOrganizationFactory>();
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
 
         return services;
