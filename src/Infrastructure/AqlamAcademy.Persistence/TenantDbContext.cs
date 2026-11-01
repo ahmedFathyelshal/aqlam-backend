@@ -32,6 +32,8 @@ public class TenantDbContext : MultiTenantDbContext
     public DbSet<AqlamAcademy.Domain.Assessments.Question> Questions => Set<AqlamAcademy.Domain.Assessments.Question>();
     public DbSet<AqlamAcademy.Domain.Assessments.Quiz> Quizzes => Set<AqlamAcademy.Domain.Assessments.Quiz>();
     public DbSet<AqlamAcademy.Domain.Assessments.QuizAttempt> QuizAttempts => Set<AqlamAcademy.Domain.Assessments.QuizAttempt>();
+    public DbSet<AqlamAcademy.Domain.Assessments.Assignment> Assignments => Set<AqlamAcademy.Domain.Assessments.Assignment>();
+    public DbSet<AqlamAcademy.Domain.Assessments.AssignmentSubmission> AssignmentSubmissions => Set<AqlamAcademy.Domain.Assessments.AssignmentSubmission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -61,6 +61,17 @@ public class LearnController : ControllerBase
     public async Task<IActionResult> SubmitAttempt(Guid attemptId, [FromBody] AnswersRequest? request, CancellationToken cancellationToken) =>
         ToActionResult(await _mediator.Send(new SubmitAttemptCommand(attemptId, request?.Answers), cancellationToken));
 
+    [HttpGet("lessons/{lessonId:guid}/assignment")]
+    public async Task<IActionResult> Assignment(Guid lessonId, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new GetStudentAssignmentQuery(lessonId), cancellationToken));
+
+    /// <summary>Hand in (or revise) the assignment; completes the lesson.</summary>
+    [HttpPut("lessons/{lessonId:guid}/assignment/submission")]
+    public async Task<IActionResult> Submit(Guid lessonId, [FromBody] SubmissionRequest request, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new SubmitAssignmentCommand(lessonId, request.Text, request.Links), cancellationToken));
+
+    public record SubmissionRequest(string? Text, IReadOnlyList<string>? Links);
+
     public record AnswersRequest(IReadOnlyList<AnswerInput>? Answers);
 
     public record ProgressRequest(int? PositionSeconds, int? WatchedPercent, bool MarkCompleted = false);

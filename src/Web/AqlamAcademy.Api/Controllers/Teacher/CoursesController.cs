@@ -169,6 +169,31 @@ public class CoursesController : ControllerBase
         return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
     }
 
+    [HttpGet("{id}/lessons/{lessonId:guid}/assignment")]
+    public async Task<IActionResult> GetAssignment(Guid id, Guid lessonId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new AqlamAcademy.Application.Features.Assessments.GetAssignmentSettingsQuery(id, lessonId), cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
+    [HttpPut("{id}/lessons/{lessonId:guid}/assignment")]
+    public async Task<IActionResult> SaveAssignment(Guid id, Guid lessonId, [FromBody] AssignmentSettingsRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new AqlamAcademy.Application.Features.Assessments.SaveAssignmentSettingsCommand(
+            id, lessonId, request.MaxPoints, request.DueAtUtc, request.AcceptLateSubmissions), cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
+    /// <summary>Grading queue: submissions of the course (pending = waiting for a grade).</summary>
+    [HttpGet("{id}/submissions")]
+    [HasPermission(Permissions.GradesEdit)]
+    public async Task<IActionResult> Submissions(Guid id, [FromQuery] bool pending, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new AqlamAcademy.Application.Features.Assessments.ListSubmissionsQuery(id, pending), cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
+    public record AssignmentSettingsRequest(decimal MaxPoints, DateTime? DueAtUtc, bool AcceptLateSubmissions = true);
     public record EnrollMembersRequest(IReadOnlyList<string> UserNames);
     public record SyncCurriculumRequest(int? ExpectedVersion, string? SyllabusRequirements, IReadOnlyList<SyncChapterInput>? Chapters);
     public record ChangeStatusRequest(AqlamAcademy.Domain.Enums.CourseStatus Status);

@@ -91,3 +91,39 @@ public class QuizAttemptConfiguration : IEntityTypeConfiguration<QuizAttempt>
         });
     }
 }
+
+public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
+{
+    public void Configure(EntityTypeBuilder<Assignment> builder)
+    {
+        builder.ToTable("Assignments", SchemaNames.Assessments);
+        builder.IsMultiTenant();
+        builder.Property<string>("TenantId").HasMaxLength(64);
+        builder.HasIndex("TenantId");
+
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.MaxPoints).HasColumnType("decimal(9,2)");
+        builder.HasIndex(x => x.LessonId).IsUnique();
+    }
+}
+
+public class AssignmentSubmissionConfiguration : IEntityTypeConfiguration<AssignmentSubmission>
+{
+    public void Configure(EntityTypeBuilder<AssignmentSubmission> builder)
+    {
+        builder.ToTable("AssignmentSubmissions", SchemaNames.Assessments);
+        builder.IsMultiTenant();
+        builder.Property<string>("TenantId").HasMaxLength(64);
+        builder.HasIndex("TenantId");
+
+        builder.HasKey(x => x.Id);
+        builder.Ignore(x => x.CanBeChangedByStudent);
+        builder.Property(x => x.Text).HasMaxLength(20000);
+        builder.Property(x => x.Feedback).HasMaxLength(4000);
+        builder.Property(x => x.Status).HasConversion<int>();
+        builder.Property(x => x.Score).HasColumnType("decimal(9,2)");
+
+        builder.HasIndex(x => new { x.AssignmentId, x.UserId }).IsUnique();
+        builder.HasIndex(x => new { x.CourseId, x.Status }); // grading queue
+    }
+}
