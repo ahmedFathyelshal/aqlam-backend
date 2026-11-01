@@ -9,7 +9,8 @@ public record RefreshSessionCommand(
     string RefreshToken,
     string? IpAddress,
     string? UserAgent,
-    string? DeviceId) : IRequest<Result<AuthTokens>>;
+    string? DeviceId,
+    string? HostTenantId = null) : IRequest<Result<AuthTokens>>;
 
 public class RefreshSessionCommandHandler : IRequestHandler<RefreshSessionCommand, Result<AuthTokens>>
 {
@@ -29,6 +30,7 @@ public class RefreshSessionCommandHandler : IRequestHandler<RefreshSessionComman
             request.RefreshToken,
             request.IpAddress,
             request.UserAgent,
-            request.DeviceId);
+            request.DeviceId,
+            request.HostTenantId);
     }
 }

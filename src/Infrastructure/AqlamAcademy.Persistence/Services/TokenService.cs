@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using AqlamAcademy.Application.Common.Models;
+using AqlamAcademy.Application.Common.Authorization;
 using AqlamAcademy.Infrastructure.Persistence.Identity;
 
 namespace AqlamAcademy.Infrastructure.Persistence.Services;
@@ -38,9 +39,10 @@ public class TokenService : ITokenService
         IList<string> roles, 
         string? ipAddress, 
         string? userAgent,
-        string? deviceId)
+        string? deviceId,
+        string? hostTenantId)
     {
-        var accessTokenResult = GenerateAccessToken(user, roles);
+        var accessTokenResult = GenerateAccessToken(user, roles, hostTenantId);
         
         var refreshTokenString = GenerateSecureRandomString();
         var refreshTokenHash = HashToken(refreshTokenString);
@@ -82,7 +84,7 @@ public class TokenService : ITokenService
         }
     }
 
-    public async Task<Result<AuthTokens>> RefreshSessionAsync(string refreshToken, string? ipAddress, string? userAgent, string? deviceId)
+    public async Task<Result<AuthTokens>> RefreshSessionAsync(string refreshToken, string? ipAddress, string? userAgent, string? deviceId, string? hostTenantId)
     {
         var tokenHash = HashToken(refreshToken);
 
@@ -167,7 +169,7 @@ public class TokenService : ITokenService
             _context.UserRefreshTokens.Add(newRefreshToken);
 
             var roles = await _userManager.GetRolesAsync(storedToken.User);
-            var accessResult = GenerateAccessToken(storedToken.User, roles);
+            var accessResult = GenerateAccessToken(storedToken.User, roles, hostTenantId);
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -253,7 +255,7 @@ public class TokenService : ITokenService
         }
     }
 
-    private (string Token, DateTime Expiration) GenerateAccessToken(ApplicationUser user, IList<string> roles)
+    private (string Token, DateTime Expiration) GenerateAccessToken(ApplicationUser user, IList<string> roles, string? hostTenantId)
     {
         var claims = new List<Claim>
         {
@@ -267,6 +269,10 @@ public class TokenService : ITokenService
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
+
+        // Sessions created on an organization's own domain only work on that domain.
+        if (!string.IsNullOrEmpty(hostTenantId))
+            claims.Add(new Claim(AuthClaims.OrganizationTenantId, hostTenantId));
 
         using var rsa = RSA.Create();
         rsa.FromXmlString(_jwtSettings.Rsa.PrivateKeyXml);

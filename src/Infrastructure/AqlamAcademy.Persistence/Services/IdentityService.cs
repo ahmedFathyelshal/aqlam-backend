@@ -39,7 +39,7 @@ public class IdentityService : IIdentityService
         return await _userManager.FindByNameAsync(userName) == null;
     }
 
-    public async Task<Result<AuthTokens>> LoginAsync(string userName, string password, string? ipAddress, string? userAgent, string? deviceId)
+    public async Task<Result<AuthTokens>> LoginAsync(string userName, string password, string? ipAddress, string? userAgent, string? deviceId, string? hostTenantId)
     {
         var user = await _userManager.FindByNameAsync(userName);
         
@@ -72,14 +72,15 @@ public class IdentityService : IIdentityService
             roles, 
             ipAddress, 
             userAgent,
-            deviceId);
+            deviceId,
+            hostTenantId);
 
         return Result<AuthTokens>.Success(tokens);
     }
 
-    public async Task<Result<AuthTokens>> RefreshSessionAsync(string refreshToken, string? ipAddress, string? userAgent, string? deviceId)
+    public async Task<Result<AuthTokens>> RefreshSessionAsync(string refreshToken, string? ipAddress, string? userAgent, string? deviceId, string? hostTenantId)
     {
-        return await _tokenService.RefreshSessionAsync(refreshToken, ipAddress, userAgent, deviceId);
+        return await _tokenService.RefreshSessionAsync(refreshToken, ipAddress, userAgent, deviceId, hostTenantId);
     }
 
     public async Task<Result<bool>> LogoutAsync(string refreshToken, string? ipAddress, string? deviceId)

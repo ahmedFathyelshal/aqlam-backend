@@ -10,7 +10,8 @@ public record LoginUserCommand(
     string Password,
     string? IpAddress,
     string? UserAgent,
-    string? DeviceId) : IRequest<Result<AuthTokens>>;
+    string? DeviceId,
+    string? HostTenantId = null) : IRequest<Result<AuthTokens>>;
 
 public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Result<AuthTokens>>
 {
@@ -31,7 +32,8 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Result<
             request.Password,
             request.IpAddress,
             request.UserAgent,
-            request.DeviceId);
+            request.DeviceId,
+            request.HostTenantId);
 
         return result;
     }

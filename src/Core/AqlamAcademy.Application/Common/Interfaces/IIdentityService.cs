@@ -15,10 +15,10 @@ public interface IIdentityService
     Task<bool> IsUserNameUniqueAsync(string userName);
 
     // Login
-    Task<Result<AuthTokens>> LoginAsync(string userName, string password, string? ipAddress, string? userAgent, string? deviceId);
+    Task<Result<AuthTokens>> LoginAsync(string userName, string password, string? ipAddress, string? userAgent, string? deviceId, string? hostTenantId);
     
     // Refresh Token
-    Task<Result<AuthTokens>> RefreshSessionAsync(string refreshToken, string? ipAddress, string? userAgent, string? deviceId);
+    Task<Result<AuthTokens>> RefreshSessionAsync(string refreshToken, string? ipAddress, string? userAgent, string? deviceId, string? hostTenantId);
 
     // Logout
     Task<Result<bool>> LogoutAsync(string refreshToken, string? ipAddress, string? deviceId);

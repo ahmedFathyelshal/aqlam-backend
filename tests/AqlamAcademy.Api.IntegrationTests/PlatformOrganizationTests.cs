@@ -66,9 +66,13 @@ public class PlatformOrganizationTests(ApiFactory factory)
         var owner = factory.CreateBrowserClient();
         var outsider = factory.CreateBrowserClient();
         var ownerName = await RegisterUserAsync(owner, TestUsers.Teacher, "host");
-        await TestUsers.RegisterAndLoginAsync(outsider, TestUsers.Teacher, "hostout");
+        var outsiderName = await RegisterUserAsync(outsider, TestUsers.Teacher, "hostout");
         var slug = UniqueSlug();
         (await admin.PostAsJsonAsync("/api/platform/organizations", NewSchool(slug, ownerName))).EnsureSuccessStatusCode();
+
+        // Sessions are bound to the domain they were created on, so both sign in on the school's domain.
+        (await SendOnHostAsync(owner, $"{slug}.localhost", "/api/Auth/login", new { userName = ownerName, password = TestUsers.Password })).EnsureSuccessStatusCode();
+        (await SendOnHostAsync(outsider, $"{slug}.localhost", "/api/Auth/login", new { userName = outsiderName, password = TestUsers.Password })).EnsureSuccessStatusCode();
 
         var byOwner = await SendOnHostAsync(owner, $"{slug}.localhost", "/api/courses/draft", new { title = "Grade 7 Science" });
         var byOutsider = await SendOnHostAsync(outsider, $"{slug}.localhost", "/api/courses/draft", new { title = "Intruder" });

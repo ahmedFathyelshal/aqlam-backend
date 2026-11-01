@@ -16,6 +16,7 @@ using AqlamAcademy.Infrastructure.Persistence;
 using AqlamAcademy.Localization;
 using AqlamAcademy.Api.Infrastructure;
 using AqlamAcademy.Api.Infrastructure.Authorization;
+using AqlamAcademy.Application.Common.Authorization;
 using AqlamAcademy.Infrastructure.Persistence.MultiTenancy;
 using Finbuckle.MultiTenant.AspNetCore.Extensions;
 using Finbuckle.MultiTenant.Extensions;
@@ -79,6 +80,19 @@ public static class PresentationDependencyInjection
                     {
                         context.Token = accessToken;
                     }
+                    return Task.CompletedTask;
+                },
+
+                // A session created on an organization's own domain only works on that domain, and a
+                // main-domain session cannot be replayed against an organization domain.
+                OnTokenValidated = context =>
+                {
+                    var tokenTenant = context.Principal?.FindFirst(AuthClaims.OrganizationTenantId)?.Value;
+                    var hostTenant = context.HttpContext.GetHostTenantId();
+
+                    if (!string.Equals(tokenTenant, hostTenant, StringComparison.Ordinal))
+                        context.Fail("The session was issued for a different domain.");
+
                     return Task.CompletedTask;
                 }
             };

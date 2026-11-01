@@ -69,7 +69,7 @@ public class AuthController : ControllerBase
 
         _logger.LogInformation("Received login request for User: {UserName} from IP: {IpAddress}", request.UserName, ipAddress);
 
-        var command = new LoginUserCommand(request.UserName, request.Password, ipAddress, userAgent, deviceId);
+        var command = new LoginUserCommand(request.UserName, request.Password, ipAddress, userAgent, deviceId, HttpContext.GetHostTenantId());
 
         var result = await _mediator.Send(command);
 
@@ -107,7 +107,8 @@ public class AuthController : ControllerBase
             refreshToken,
             ipAddress,
             userAgent,
-            GetOrCreateDeviceId());
+            GetOrCreateDeviceId(),
+            HttpContext.GetHostTenantId());
 
         var result = await _mediator.Send(command);
 
