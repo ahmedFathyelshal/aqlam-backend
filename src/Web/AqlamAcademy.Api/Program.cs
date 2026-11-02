@@ -38,7 +38,9 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddPresentation(builder.Configuration);
-builder.Services.AddControllers();
+// Enums accepted as names ("School") or numbers; returned as names.
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
 // 4. Global Error Handling
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

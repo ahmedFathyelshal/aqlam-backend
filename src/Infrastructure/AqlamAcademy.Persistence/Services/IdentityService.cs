@@ -16,19 +16,22 @@ public class IdentityService : IIdentityService
     private readonly ILogger<IdentityService> _logger;
     private readonly ITokenService _tokenService;
     private readonly ILocalizationService _localizer;
+    private readonly PersonalOrganizationFactory _personalOrganizations;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager,
         ApplicationDbContext context,
         ILogger<IdentityService> logger,
         ITokenService tokenService,
-        ILocalizationService localizer)
+        ILocalizationService localizer,
+        PersonalOrganizationFactory personalOrganizations)
     {
         _userManager = userManager;
         _context = context;
         _logger = logger;
         _tokenService = tokenService;
         _localizer = localizer;
+        _personalOrganizations = personalOrganizations;
     }
 
     public async Task<bool> IsUserNameUniqueAsync(string userName)
@@ -36,7 +39,7 @@ public class IdentityService : IIdentityService
         return await _userManager.FindByNameAsync(userName) == null;
     }
 
-    public async Task<Result<AuthTokens>> LoginAsync(string userName, string password, string? ipAddress, string? userAgent, string? deviceId)
+    public async Task<Result<AuthTokens>> LoginAsync(string userName, string password, string? ipAddress, string? userAgent, string? deviceId, string? hostTenantId)
     {
         var user = await _userManager.FindByNameAsync(userName);
         
@@ -69,14 +72,34 @@ public class IdentityService : IIdentityService
             roles, 
             ipAddress, 
             userAgent,
-            deviceId);
+            deviceId,
+            hostTenantId);
 
         return Result<AuthTokens>.Success(tokens);
     }
 
-    public async Task<Result<AuthTokens>> RefreshSessionAsync(string refreshToken, string? ipAddress, string? userAgent, string? deviceId)
+    public async Task<Result<AuthTokens>> RefreshSessionAsync(string refreshToken, string? ipAddress, string? userAgent, string? deviceId, string? hostTenantId)
     {
-        return await _tokenService.RefreshSessionAsync(refreshToken, ipAddress, userAgent, deviceId);
+        return await _tokenService.RefreshSessionAsync(refreshToken, ipAddress, userAgent, deviceId, hostTenantId);
+    }
+
+    public async Task<Result<bool>> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return Result<bool>.NotFound("User not found.");
+
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!result.Succeeded)
+            return Result<bool>.Failure(result.Errors.Select(e => e.Description));
+
+        if (user.MustChangePassword)
+        {
+            user.MustChangePassword = false;
+            await _userManager.UpdateAsync(user);
+        }
+
+        return Result<bool>.Success(true);
     }
 
     public async Task<Result<bool>> LogoutAsync(string refreshToken, string? ipAddress, string? deviceId)
@@ -149,6 +172,7 @@ public class IdentityService : IIdentityService
         {
             case UserType.Teacher:
                 _context.TeacherProfiles.Add(new TeacherProfile { UserId = user.Id });
+                await _personalOrganizations.AddForAsync(user);
                 break;
             case UserType.Student:
                 _context.StudentProfiles.Add(new StudentProfile { UserId = user.Id });

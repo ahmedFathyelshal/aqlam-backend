@@ -11,19 +11,27 @@ namespace AqlamAcademy.Api.IntegrationTests;
 /// </summary>
 public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    public const string PlatformAdminUserName = "platformadmin";
+    public const string PlatformAdminPassword = "Admin!Passw0rd";
+
     private readonly PostgreSqlContainer _db = new PostgreSqlBuilder()
         .WithImage("postgres:17-alpine")
         .Build();
+
+    /// <summary>Connection string of the shared database in the test container.</summary>
+    public string SharedConnectionString => _db.GetConnectionString();
 
     public async Task InitializeAsync()
     {
         await _db.StartAsync();
 
         using var rsa = RSA.Create(2048);
-        Environment.SetEnvironmentVariable("DatabaseSettings__Provider", "postgresql");
+
         Environment.SetEnvironmentVariable("DatabaseSettings__ConnectionString", _db.GetConnectionString());
         Environment.SetEnvironmentVariable("JwtSettings__Rsa__PrivateKeyXml", rsa.ToXmlString(includePrivateParameters: true));
         Environment.SetEnvironmentVariable("RateLimiting__AuthPermitsPerMinute", "1000");
+        Environment.SetEnvironmentVariable("Platform__BootstrapAdmin__UserName", PlatformAdminUserName);
+        Environment.SetEnvironmentVariable("Platform__BootstrapAdmin__Password", PlatformAdminPassword);
         Environment.SetEnvironmentVariable("JwtSettings__Rsa__PublicKeyXml", rsa.ToXmlString(includePrivateParameters: false));
     }
 

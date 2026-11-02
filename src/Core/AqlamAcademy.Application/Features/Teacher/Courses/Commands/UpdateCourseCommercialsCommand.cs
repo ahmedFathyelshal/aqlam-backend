@@ -11,20 +11,18 @@ public record UpdateCourseCommercialsCommand(Guid Id, string PricingType, decima
 public class UpdateCourseCommercialsCommandHandler : IRequestHandler<UpdateCourseCommercialsCommand, Result<CourseDraftDto>>
 {
     private readonly ICourseService _courseService;
-    private readonly ICurrentUserService _currentUser;
 
-    public UpdateCourseCommercialsCommandHandler(ICourseService courseService, ICurrentUserService currentUser)
+    public UpdateCourseCommercialsCommandHandler(ICourseService courseService)
     {
         _courseService = courseService;
-        _currentUser = currentUser;
     }
 
     public async Task<Result<CourseDraftDto>> Handle(UpdateCourseCommercialsCommand request, CancellationToken cancellationToken)
     {
         var course = await _courseService.GetCourseByIdAsync(request.Id, cancellationToken);
 
-        // Ownership: a teacher may only modify their own courses. Return 404 (not 403) so ids are not confirmed.
-        if (course == null || course.TeacherId != _currentUser.UserId)
+        // The tenant filter only returns courses of the current organization; permissions are checked by the API policy.
+        if (course == null)
             return Result<CourseDraftDto>.NotFound("Course not found.");
 
         // Parse enums in Application layer (business validation)

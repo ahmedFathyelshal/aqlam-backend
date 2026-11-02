@@ -10,6 +10,7 @@ public class IdentityRoleConfiguration : IEntityTypeConfiguration<IdentityRole<G
     private static readonly Guid StudentRoleId = Guid.Parse("600455B8-6449-40D4-B9D1-0DFA36633630");
     private static readonly Guid TeacherRoleId = Guid.Parse("96C8E966-E3B2-43E5-BF83-5683707B5061");
     private static readonly Guid AssistantRoleId = Guid.Parse("FAB469E4-D1CD-47E4-B9D1-0DFA36633631");
+    private static readonly Guid SuperAdminRoleId = Guid.Parse("3A1C4E2B-7F5D-4B8A-9C61-2E4F8D0B7A13");
 
     public void Configure(EntityTypeBuilder<IdentityRole<Guid>> builder)
     {
@@ -36,6 +37,13 @@ public class IdentityRoleConfiguration : IEntityTypeConfiguration<IdentityRole<G
                 Name = "Assistant",
                 NormalizedName = "ASSISTANT",
                 ConcurrencyStamp = "f4fe6bd9-57ef-4e36-a5cc-9c60010c2738"
+            },
+            new IdentityRole<Guid>
+            {
+                Id = SuperAdminRoleId,
+                Name = "SuperAdmin",
+                NormalizedName = "SUPERADMIN",
+                ConcurrencyStamp = "8d2f6a71-3c4b-4e9a-b5d0-7a1e2c3f4b56"
             }
         );
     }

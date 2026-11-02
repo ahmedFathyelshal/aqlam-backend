@@ -5,7 +5,8 @@ public record AuthUser(
     string UserName,
     string? Email,
     string FullName,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    bool MustChangePassword = false);
 
 public record AuthTokens(
     string AccessToken,

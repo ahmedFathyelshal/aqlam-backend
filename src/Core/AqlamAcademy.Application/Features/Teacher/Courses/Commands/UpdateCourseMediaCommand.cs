@@ -10,20 +10,18 @@ public record UpdateCourseMediaCommand(Guid Id, string? Subtitle, string? Thumbn
 public class UpdateCourseMediaCommandHandler : IRequestHandler<UpdateCourseMediaCommand, Result<CourseDraftDto>>
 {
     private readonly ICourseService _courseService;
-    private readonly ICurrentUserService _currentUser;
 
-    public UpdateCourseMediaCommandHandler(ICourseService courseService, ICurrentUserService currentUser)
+    public UpdateCourseMediaCommandHandler(ICourseService courseService)
     {
         _courseService = courseService;
-        _currentUser = currentUser;
     }
 
     public async Task<Result<CourseDraftDto>> Handle(UpdateCourseMediaCommand request, CancellationToken cancellationToken)
     {
         var course = await _courseService.GetCourseByIdAsync(request.Id, cancellationToken);
 
-        // Ownership: a teacher may only modify their own courses. Return 404 (not 403) so ids are not confirmed.
-        if (course == null || course.TeacherId != _currentUser.UserId)
+        // The tenant filter only returns courses of the current organization; permissions are checked by the API policy.
+        if (course == null)
             return Result<CourseDraftDto>.NotFound("Course not found.");
 
         await _courseService.UpdateMediaAsync(request.Id, request.Subtitle, request.ThumbnailUrl, request.PromoVideoUrl, cancellationToken);

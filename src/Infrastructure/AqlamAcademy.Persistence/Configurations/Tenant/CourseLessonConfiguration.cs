@@ -1,16 +1,20 @@
 using AqlamAcademy.Domain.Courses;
+using Finbuckle.MultiTenant.EntityFrameworkCore.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using AqlamAcademy.Infrastructure.Persistence.Constants;
 
-namespace AqlamAcademy.Infrastructure.Persistence.Configurations;
+namespace AqlamAcademy.Infrastructure.Persistence.Configurations.Tenant;
 
 public class CourseLessonConfiguration : IEntityTypeConfiguration<CourseLesson>
 {
     public void Configure(EntityTypeBuilder<CourseLesson> builder)
     {
         builder.ToTable("CourseLessons", SchemaNames.Courses);
+        builder.IsMultiTenant();
+        builder.Property<string>("TenantId").HasMaxLength(64);
+        builder.HasIndex("TenantId");
 
         builder.HasKey(x => x.Id);
 

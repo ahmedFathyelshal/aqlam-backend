@@ -17,274 +17,10 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.6")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("AqlamAcademy.Domain.Courses.Course", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("AccessDurationDays")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("AccessExpiryPolicy")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("CodeActivationOnly")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("GradeId")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("LastModifiedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("PricingType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("PromoVideoUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<int?>("StageId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("SubjectId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Subtitle")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("SyllabusRequirements")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("TeacherId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ThumbnailUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GradeId");
-
-                    b.HasIndex("StageId");
-
-                    b.HasIndex("SubjectId");
-
-                    b.ToTable("Courses", "Courses");
-                });
-
-            modelBuilder.Entity("AqlamAcademy.Domain.Courses.CourseChapter", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("LastModifiedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CourseId");
-
-                    b.ToTable("CourseChapters", "Courses");
-                });
-
-            modelBuilder.Entity("AqlamAcademy.Domain.Courses.CourseLesson", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ChapterId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Content")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("DurationInMinutes")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsFreePreview")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsPublished")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("LastModifiedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("RequirePreviousLessonCompletion")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Summary")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("UnlockDaysAfterEnrollment")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("VideoUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChapterId");
-
-                    b.ToTable("CourseLessons", "Courses");
-                });
-
-            modelBuilder.Entity("AqlamAcademy.Domain.Courses.LessonResource", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsDownloadable")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("LastModifiedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("LessonId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ResourceUrl")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LessonId");
-
-                    b.ToTable("LessonResources", "Courses");
-                });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Lookups.CourseState", b =>
                 {
@@ -310,6 +46,47 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("CourseStates", "Lookups");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Lookups.Curriculum", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("CountryCode")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Curricula", "Lookups");
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Lookups.EducationGrade", b =>
@@ -348,6 +125,9 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("CurriculumId")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -365,6 +145,8 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CurriculumId");
 
                     b.ToTable("EducationStages", "Lookups");
                 });
@@ -393,6 +175,256 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Subjects", "Lookups");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.JoinCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("MaxUses")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("RequiresApproval")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UsesCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("JoinCodes", "Organizations");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.Membership", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("JoinedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastModifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Roles")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "Status");
+
+                    b.HasIndex("UserId", "OrganizationId")
+                        .IsUnique();
+
+                    b.ToTable("Memberships", "Organizations");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.Organization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<string>("DedicatedConnectionString")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("IsolationTier")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("LastModifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("PrimaryColor")
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
+
+                    b.Property<int>("PublicPublishing")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("Organizations", "Organizations");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.OrganizationDomain", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasMaxLength(253)
+                        .HasColumnType("character varying(253)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Host")
+                        .IsUnique();
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("OrganizationDomains", "Organizations");
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Staff.AssistantProfile", b =>
@@ -618,6 +650,9 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -711,6 +746,25 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.ToTable("UserRefreshTokens", "Identity");
                 });
 
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DataProtectionKeys");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
                 {
                     b.Property<Guid>("Id")
@@ -758,6 +812,13 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                             ConcurrencyStamp = "f4fe6bd9-57ef-4e36-a5cc-9c60010c2738",
                             Name = "Assistant",
                             NormalizedName = "ASSISTANT"
+                        },
+                        new
+                        {
+                            Id = new Guid("3a1c4e2b-7f5d-4b8a-9c61-2e4f8d0b7a13"),
+                            ConcurrencyStamp = "8d2f6a71-3c4b-4e9a-b5d0-7a1e2c3f4b56",
+                            Name = "SuperAdmin",
+                            NormalizedName = "SUPERADMIN"
                         });
                 });
 
@@ -864,63 +925,6 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.ToTable("UserTokens", "Identity");
                 });
 
-            modelBuilder.Entity("AqlamAcademy.Domain.Courses.Course", b =>
-                {
-                    b.HasOne("AqlamAcademy.Domain.Lookups.EducationGrade", "Grade")
-                        .WithMany()
-                        .HasForeignKey("GradeId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("AqlamAcademy.Domain.Lookups.EducationStage", "Stage")
-                        .WithMany()
-                        .HasForeignKey("StageId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("AqlamAcademy.Domain.Lookups.Subject", "Subject")
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Grade");
-
-                    b.Navigation("Stage");
-
-                    b.Navigation("Subject");
-                });
-
-            modelBuilder.Entity("AqlamAcademy.Domain.Courses.CourseChapter", b =>
-                {
-                    b.HasOne("AqlamAcademy.Domain.Courses.Course", "Course")
-                        .WithMany("Chapters")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-                });
-
-            modelBuilder.Entity("AqlamAcademy.Domain.Courses.CourseLesson", b =>
-                {
-                    b.HasOne("AqlamAcademy.Domain.Courses.CourseChapter", "Chapter")
-                        .WithMany("Lessons")
-                        .HasForeignKey("ChapterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Chapter");
-                });
-
-            modelBuilder.Entity("AqlamAcademy.Domain.Courses.LessonResource", b =>
-                {
-                    b.HasOne("AqlamAcademy.Domain.Courses.CourseLesson", "Lesson")
-                        .WithMany("Resources")
-                        .HasForeignKey("LessonId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Lesson");
-                });
-
             modelBuilder.Entity("AqlamAcademy.Domain.Lookups.EducationGrade", b =>
                 {
                     b.HasOne("AqlamAcademy.Domain.Lookups.EducationStage", "Stage")
@@ -930,6 +934,55 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .IsRequired();
 
                     b.Navigation("Stage");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Lookups.EducationStage", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Lookups.Curriculum", "Curriculum")
+                        .WithMany("Stages")
+                        .HasForeignKey("CurriculumId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Curriculum");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.JoinCode", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Organizations.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.Membership", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Organizations.Organization", "Organization")
+                        .WithMany("Memberships")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AqlamAcademy.Infrastructure.Persistence.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.OrganizationDomain", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Organizations.Organization", "Organization")
+                        .WithMany("Domains")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Staff.AssistantProfile", b =>
@@ -1040,24 +1093,21 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("AqlamAcademy.Domain.Courses.Course", b =>
+            modelBuilder.Entity("AqlamAcademy.Domain.Lookups.Curriculum", b =>
                 {
-                    b.Navigation("Chapters");
-                });
-
-            modelBuilder.Entity("AqlamAcademy.Domain.Courses.CourseChapter", b =>
-                {
-                    b.Navigation("Lessons");
-                });
-
-            modelBuilder.Entity("AqlamAcademy.Domain.Courses.CourseLesson", b =>
-                {
-                    b.Navigation("Resources");
+                    b.Navigation("Stages");
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Lookups.EducationStage", b =>
                 {
                     b.Navigation("Grades");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.Organization", b =>
+                {
+                    b.Navigation("Domains");
+
+                    b.Navigation("Memberships");
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Staff.AssistantProfile", b =>

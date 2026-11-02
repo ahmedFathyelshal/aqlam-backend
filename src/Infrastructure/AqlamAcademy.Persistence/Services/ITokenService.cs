@@ -10,13 +10,15 @@ public interface ITokenService
         IList<string> roles, 
         string? ipAddress, 
         string? userAgent,
-        string? deviceId);
+        string? deviceId,
+        string? hostTenantId);
 
     Task<Result<AuthTokens>> RefreshSessionAsync(
         string refreshToken, 
         string? ipAddress, 
         string? userAgent,
-        string? deviceId);
+        string? deviceId,
+        string? hostTenantId);
 
     Task<Result<bool>> RevokeTokenAsync(string refreshToken, string? ipAddress, string? deviceId);
 }

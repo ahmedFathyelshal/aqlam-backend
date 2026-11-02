@@ -6,6 +6,9 @@ namespace AqlamAcademy.Infrastructure.Persistence.Identity;
 public class ApplicationUser : IdentityUser<Guid>, ISoftDelete
 {
     public string FullName { get; set; } = string.Empty;
+
+    /// <summary>Set for accounts created by an administrator (e.g. bulk import) with a temporary password.</summary>
+    public bool MustChangePassword { get; set; }
     
     // Audit properties
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

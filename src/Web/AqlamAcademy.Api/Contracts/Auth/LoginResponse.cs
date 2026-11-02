@@ -11,4 +11,7 @@ public class LoginResponse
     public string Name { get; set; } = string.Empty;
     public string? Email { get; set; }
     public IReadOnlyList<string> Roles { get; set; } = Array.Empty<string>();
+
+    /// <summary>The client must send the user to "change password" before anything else.</summary>
+    public bool MustChangePassword { get; set; }
 }

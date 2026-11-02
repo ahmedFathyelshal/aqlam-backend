@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 
 using System.Linq.Expressions;
 using System.Reflection;
@@ -9,10 +10,11 @@ using AqlamAcademy.Domain.Students;
 using AqlamAcademy.Domain.Staff;
 using AqlamAcademy.Domain.Common;
 using AqlamAcademy.Domain.Lookups;
+using AqlamAcademy.Domain.Organizations;
 
 namespace AqlamAcademy.Infrastructure.Persistence;
 
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IDataProtectionKeyContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
@@ -25,24 +27,32 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
 
     // Lookups
+    public DbSet<Curriculum> Curricula => Set<Curriculum>();
     public DbSet<EducationStage> EducationStages => Set<EducationStage>();
     public DbSet<EducationGrade> EducationGrades => Set<EducationGrade>();
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<AqlamAcademy.Domain.Lookups.CourseState> CourseStates => Set<AqlamAcademy.Domain.Lookups.CourseState>();
 
-    // Courses
-    public DbSet<AqlamAcademy.Domain.Courses.Course> Courses => Set<AqlamAcademy.Domain.Courses.Course>();
-    public DbSet<AqlamAcademy.Domain.Courses.CourseChapter> CourseChapters => Set<AqlamAcademy.Domain.Courses.CourseChapter>();
-    public DbSet<AqlamAcademy.Domain.Courses.CourseLesson> CourseLessons => Set<AqlamAcademy.Domain.Courses.CourseLesson>();
-    public DbSet<AqlamAcademy.Domain.Courses.LessonResource> LessonResources => Set<AqlamAcademy.Domain.Courses.LessonResource>();
+    // Organizations (tenants) and memberships
+    public DbSet<Organization> Organizations => Set<Organization>();
+    public DbSet<OrganizationDomain> OrganizationDomains => Set<OrganizationDomain>();
+    public DbSet<Membership> Memberships => Set<Membership>();
+    public DbSet<JoinCode> JoinCodes => Set<JoinCode>();
+
+    // ASP.NET Data Protection key ring (shared by all API instances)
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
+        // Platform store: identity, organizations, memberships, lookups. Tenant-owned configurations
+        // (courses etc.) are excluded here and applied by TenantDbContext.
         // This automatically applies all IEntityTypeConfiguration implementations in the assembly,
         // including our custom Identity, Table renames, and Role seeding configurations.
-        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            Assembly.GetExecutingAssembly(),
+            type => type.Namespace != TenantDbContext.ConfigurationNamespace);
 
         // Configure Global Soft-Delete Filter
         ConfigureSoftDeleteFilter(modelBuilder);

@@ -4,20 +4,263 @@
     "NameEn": "Primary",
     "NameAr": "الابتدائية",
     "OrderIndex": 1,
-    "IsActive": true
+    "IsActive": true,
+    "CurriculumId": 2
   },
   {
     "Id": 2,
     "NameEn": "Middle",
     "NameAr": "الإعدادية",
     "OrderIndex": 2,
-    "IsActive": true
+    "IsActive": true,
+    "CurriculumId": 2
   },
   {
     "Id": 3,
     "NameEn": "High School",
     "NameAr": "الثانوية",
     "OrderIndex": 3,
+    "IsActive": true,
+    "CurriculumId": 2
+  },
+  {
+    "Id": 4,
+    "CurriculumId": 2,
+    "NameEn": "Kindergarten",
+    "NameAr": "رياض الأطفال",
+    "OrderIndex": 0,
+    "IsActive": true
+  },
+  {
+    "Id": 5,
+    "CurriculumId": 3,
+    "NameEn": "Primary",
+    "NameAr": "الابتدائية الأزهرية",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 6,
+    "CurriculumId": 3,
+    "NameEn": "Preparatory",
+    "NameAr": "الإعدادية الأزهرية",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 7,
+    "CurriculumId": 3,
+    "NameEn": "Secondary",
+    "NameAr": "الثانوية الأزهرية",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 10,
+    "CurriculumId": 1,
+    "NameEn": "Kindergarten",
+    "NameAr": "رياض الأطفال",
+    "OrderIndex": 0,
+    "IsActive": true
+  },
+  {
+    "Id": 11,
+    "CurriculumId": 1,
+    "NameEn": "Primary",
+    "NameAr": "المرحلة الابتدائية",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 12,
+    "CurriculumId": 1,
+    "NameEn": "Intermediate",
+    "NameAr": "المرحلة المتوسطة",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 13,
+    "CurriculumId": 1,
+    "NameEn": "Secondary",
+    "NameAr": "المرحلة الثانوية",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 20,
+    "CurriculumId": 4,
+    "NameEn": "Elementary School",
+    "NameAr": "المرحلة الابتدائية",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 21,
+    "CurriculumId": 4,
+    "NameEn": "Middle School",
+    "NameAr": "المرحلة المتوسطة",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 22,
+    "CurriculumId": 4,
+    "NameEn": "High School",
+    "NameAr": "المرحلة الثانوية",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 30,
+    "CurriculumId": 5,
+    "NameEn": "Primary (Key Stages 1-2)",
+    "NameAr": "المرحلة الابتدائية",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 31,
+    "CurriculumId": 5,
+    "NameEn": "Lower Secondary (Key Stage 3)",
+    "NameAr": "المرحلة الإعدادية",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 32,
+    "CurriculumId": 5,
+    "NameEn": "IGCSE",
+    "NameAr": "IGCSE",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 33,
+    "CurriculumId": 5,
+    "NameEn": "A Level",
+    "NameAr": "A Level",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 40,
+    "CurriculumId": 6,
+    "NameEn": "Primary Years Programme (PYP)",
+    "NameAr": "برنامج السنوات الابتدائية",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 41,
+    "CurriculumId": 6,
+    "NameEn": "Middle Years Programme (MYP)",
+    "NameAr": "برنامج السنوات المتوسطة",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 42,
+    "CurriculumId": 6,
+    "NameEn": "Diploma Programme (DP)",
+    "NameAr": "برنامج الدبلوما",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 50,
+    "CurriculumId": 7,
+    "NameEn": "Primaire",
+    "NameAr": "المرحلة الابتدائية",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 51,
+    "CurriculumId": 7,
+    "NameEn": "Collège",
+    "NameAr": "المرحلة الإعدادية",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 52,
+    "CurriculumId": 7,
+    "NameEn": "Lycée",
+    "NameAr": "المرحلة الثانوية",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 60,
+    "CurriculumId": 8,
+    "NameEn": "Primary",
+    "NameAr": "المرحلة الابتدائية",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 61,
+    "CurriculumId": 8,
+    "NameEn": "Middle",
+    "NameAr": "المرحلة المتوسطة",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 62,
+    "CurriculumId": 8,
+    "NameEn": "Secondary",
+    "NameAr": "المرحلة الثانوية",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 63,
+    "CurriculumId": 8,
+    "NameEn": "Senior Secondary",
+    "NameAr": "المرحلة الثانوية العليا",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 70,
+    "CurriculumId": 9,
+    "NameEn": "Primary",
+    "NameAr": "المرحلة الابتدائية",
+    "OrderIndex": 1,
+    "IsActive": true
+  },
+  {
+    "Id": 71,
+    "CurriculumId": 9,
+    "NameEn": "Middle",
+    "NameAr": "المرحلة المتوسطة",
+    "OrderIndex": 2,
+    "IsActive": true
+  },
+  {
+    "Id": 72,
+    "CurriculumId": 9,
+    "NameEn": "Matric (SSC)",
+    "NameAr": "الثانوية (SSC)",
+    "OrderIndex": 3,
+    "IsActive": true
+  },
+  {
+    "Id": 73,
+    "CurriculumId": 9,
+    "NameEn": "Intermediate (HSSC)",
+    "NameAr": "الثانوية العليا (HSSC)",
+    "OrderIndex": 4,
+    "IsActive": true
+  },
+  {
+    "Id": 80,
+    "CurriculumId": 10,
+    "NameEn": "University Admission Tests",
+    "NameAr": "اختبارات القبول الجامعي",
+    "OrderIndex": 1,
     "IsActive": true
   }
 ]
