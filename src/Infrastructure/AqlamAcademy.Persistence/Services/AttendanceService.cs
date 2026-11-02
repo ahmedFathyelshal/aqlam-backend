@@ -199,6 +199,6 @@ public class AttendanceService : IAttendanceService
     {
         var ids = userIds.Distinct().ToList();
         return await _platform.Users.AsNoTracking().Where(u => ids.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, u => new Person(u.UserName!, u.FullName), cancellationToken);
+            .ToDictionaryAsync(u => u.Id, u => new Person(u.UserName!, u.DisplayName), cancellationToken);
     }
 }

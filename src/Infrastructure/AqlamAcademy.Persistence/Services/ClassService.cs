@@ -316,6 +316,10 @@ public class ClassService : IClassService
             return Result<TeachingAssignmentDto>.Conflict($"{subjectName} already has a teacher in this class. Change the teacher instead.");
 
         // The subject space: a private course for this class, ready for the teacher to fill and publish.
+        // Classification comes from the class (stage derived from its grade) so the publish checklist only asks for content.
+        int? stageId = classGroup.GradeId is { } gradeId
+            ? await _platform.EducationGrades.Where(g => g.Id == gradeId).Select(g => (int?)g.EducationStageId).FirstOrDefaultAsync(cancellationToken)
+            : null;
         var course = new Course
         {
             Title = $"{subjectName} — {classGroup.Name}",
@@ -325,6 +329,7 @@ public class ClassService : IClassService
             PricingType = PricingType.Free,
             AccessExpiryPolicy = AccessExpiryPolicy.Unlimited,
             CurriculumId = classGroup.CurriculumId,
+            StageId = stageId,
             GradeId = classGroup.GradeId,
             SubjectId = subjectId,
             CreatedByUserId = teacherUserId
@@ -383,7 +388,7 @@ public class ClassService : IClassService
     {
         var ids = userIds.Distinct().ToList();
         return await _platform.Users.AsNoTracking().Where(u => ids.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, u => new Person(u.UserName!, u.FullName, u.Gender), cancellationToken);
+            .ToDictionaryAsync(u => u.Id, u => new Person(u.UserName!, u.DisplayName, u.Gender), cancellationToken);
     }
 
     private async Task<Dictionary<Guid, string>> UserNamesAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken) =>

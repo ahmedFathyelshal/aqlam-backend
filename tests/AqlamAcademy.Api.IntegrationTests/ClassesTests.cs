@@ -145,6 +145,30 @@ public class ClassesTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task Subject_course_inherits_the_class_classification_so_only_content_is_missing()
+    {
+        var school = await TestSchool.CreateAsync(factory);
+        var curriculumId = (await GetDataAsync(school.Owner, "/api/Lookups/curricula?countryCode=SA")).EnumerateArray()
+            .First(c => c.GetProperty("code").GetString() == "SA_NATIONAL").GetProperty("id").GetInt32();
+        var stageId = (await GetDataAsync(school.Owner, $"/api/Lookups/education-stages?curriculumId={curriculumId}"))[1].GetProperty("id").GetInt32();
+        var gradeId = (await GetDataAsync(school.Owner, $"/api/Lookups/education-grades?stageId={stageId}"))[0].GetProperty("id").GetInt32();
+        var subjectId = (await GetDataAsync(school.Owner, "/api/Lookups/subjects"))[0].GetProperty("id").GetInt32();
+        var classId = await DataAsync(await school.Owner.PostAsJsonAsync($"{school.Api}/classes",
+            new { name = "7-C", kind = "Section", gender = "Mixed", curriculumId, gradeId }));
+        var teacher = await school.AddMemberAsync("Teacher", prefix: "cls");
+
+        var assignment = await DataAsync(await school.Owner.PostAsJsonAsync($"{school.Api}/classes/{classId.GetProperty("id").GetString()}/assignments",
+            new { subjectId, teacherUserId = teacher.UserId }));
+        var courseId = assignment.GetProperty("courseId").GetString()!;
+        var draft = await CourseTestHelpers.GetDraftAsync(school.Owner, school.Slug, courseId);
+
+        Assert.Equal(stageId, draft.GetProperty("stageId").GetInt32()); // derived from the grade
+        var checklist = await GetDataAsync(school.Owner, $"{school.Api}/courses/{courseId}/publish-checklist");
+        Assert.DoesNotContain(checklist.EnumerateArray(), issue => issue.GetString()!.Contains("curriculum"));
+        Assert.DoesNotContain(checklist.EnumerateArray(), issue => issue.GetString()!.Contains("price", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task Center_groups_keep_a_weekly_schedule()
     {
         var center = await TestSchool.CreateAsync(factory, type: "Center");

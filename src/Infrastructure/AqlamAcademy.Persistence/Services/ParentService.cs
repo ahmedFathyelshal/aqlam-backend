@@ -53,7 +53,7 @@ public class ParentService : IParentService
                 join u in _platform.Users.AsNoTracking() on l.ParentUserId equals u.Id
                 where l.ChildUserId == childUserId
                 orderby l.CreatedAtUtc
-                select new ParentDto(u.Id, u.UserName!, u.FullName, u.PhoneNumber, l.CreatedAtUtc))
+                select new ParentDto(u.Id, u.UserName!, u.FullName == "" ? u.UserName! : u.FullName, u.PhoneNumber, l.CreatedAtUtc))
             .ToListAsync(cancellationToken);
         return Result<IReadOnlyList<ParentDto>>.Success(parents);
     }
@@ -72,7 +72,7 @@ public class ParentService : IParentService
             return Result<ParentDto>.Failure(failure.ErrorType, failure.Errors);
 
         var link = await CreateLinkAsync(parent.Id, childUserId, orgId, cancellationToken);
-        return Result<ParentDto>.Success(new ParentDto(parent.Id, parent.UserName!, parent.FullName, parent.PhoneNumber, link.CreatedAtUtc));
+        return Result<ParentDto>.Success(new ParentDto(parent.Id, parent.UserName!, parent.DisplayName, parent.PhoneNumber, link.CreatedAtUtc));
     }
 
     public async Task<Result<bool>> UnlinkParentAsync(Guid childUserId, Guid parentUserId, CancellationToken cancellationToken)
@@ -123,7 +123,7 @@ public class ParentService : IParentService
         _platform.ParentInvites.Add(invite);
         await _platform.SaveChangesAsync(cancellationToken);
 
-        var childName = await _platform.Users.Where(u => u.Id == childUserId).Select(u => u.FullName).FirstAsync(cancellationToken);
+        var childName = await _platform.Users.Where(u => u.Id == childUserId).Select(u => u.FullName == "" ? u.UserName! : u.FullName).FirstAsync(cancellationToken);
         return Result<ParentInviteDto>.Success(new ParentInviteDto(invite.Code, childName, invite.ExpiresAtUtc));
     }
 
@@ -172,7 +172,7 @@ public class ParentService : IParentService
                 select new { child.UserId, Org = new ChildOrganizationDto(o.Id, o.Slug, o.Name) })
             .ToListAsync(cancellationToken);
 
-        return children.Select(c => new ChildDto(c.Id, c.UserName!, c.FullName,
+        return children.Select(c => new ChildDto(c.Id, c.UserName!, string.IsNullOrWhiteSpace(c.FullName) ? c.UserName! : c.FullName,
             orgs.Where(o => o.UserId == c.Id).Select(o => o.Org).ToList())).ToList();
     }
 
@@ -183,7 +183,7 @@ public class ParentService : IParentService
         if (!linked || !await IsStudentAsync(childUserId, orgId, cancellationToken))
             return Result<ChildOverviewDto>.NotFound("Child not found.");
 
-        var fullName = await _platform.Users.Where(u => u.Id == childUserId).Select(u => u.FullName).FirstAsync(cancellationToken);
+        var fullName = await _platform.Users.Where(u => u.Id == childUserId).Select(u => u.FullName == "" ? u.UserName! : u.FullName).FirstAsync(cancellationToken);
 
         var classes = await (
                 from s in _tenant.ClassStudents.AsNoTracking()

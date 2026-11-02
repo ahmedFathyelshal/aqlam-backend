@@ -7,6 +7,9 @@ public class ApplicationUser : IdentityUser<Guid>, ISoftDelete
 {
     public string FullName { get; set; } = string.Empty;
 
+    /// <summary>Full name, or the username when no name was given (self-registration does not ask for one). Not mapped.</summary>
+    public string DisplayName => string.IsNullOrWhiteSpace(FullName) ? UserName ?? string.Empty : FullName;
+
     /// <summary>Needed for gender-separated classes (Saudi schools); optional elsewhere.</summary>
     public AqlamAcademy.Domain.Classes.Gender? Gender { get; set; }
 

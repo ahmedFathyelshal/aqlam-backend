@@ -138,7 +138,7 @@ public class AnnouncementService : IAnnouncementService
     private async Task<List<AnnouncementDto>> ToDtosAsync(List<Announcement> announcements, CancellationToken cancellationToken)
     {
         var authorIds = announcements.Select(a => a.AuthorUserId).Distinct().ToList();
-        var authors = await _platform.Users.AsNoTracking().Where(u => authorIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.FullName, cancellationToken);
+        var authors = await _platform.Users.AsNoTracking().Where(u => authorIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.DisplayName, cancellationToken);
         var classIds = announcements.Where(a => a.ClassGroupId != null).Select(a => a.ClassGroupId!.Value).Distinct().ToList();
         var classes = await _tenant.ClassGroups.AsNoTracking().Where(c => classIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
 
