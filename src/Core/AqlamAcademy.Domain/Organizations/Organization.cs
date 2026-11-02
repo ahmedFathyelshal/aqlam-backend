@@ -22,6 +22,9 @@ public class Organization : BaseEntity
     public string CountryCode { get; set; } = "SA";
     public string Currency { get; set; } = "SAR";
     public string TimeZone { get; set; } = "Asia/Riyadh";
+    public CalendarDisplay Calendar { get; set; } = CalendarDisplay.Both;
+    /// <summary>First day of the school week (Sunday in Saudi Arabia and most Egyptian schools).</summary>
+    public DayOfWeek WeekStartDay { get; set; } = DayOfWeek.Sunday;
 
     // Branding
     public string? LogoUrl { get; set; }
@@ -29,6 +32,10 @@ public class Organization : BaseEntity
 
     // Policies
     public PublicPublishingPolicy PublicPublishing { get; set; } = PublicPublishingPolicy.Allowed;
+
+    /// <summary>Saudi users read Hijri and Gregorian dates side by side; elsewhere Gregorian.</summary>
+    public static CalendarDisplay DefaultCalendarFor(string countryCode) =>
+        countryCode == "SA" ? CalendarDisplay.Both : CalendarDisplay.Gregorian;
 
     public ICollection<OrganizationDomain> Domains { get; set; } = new List<OrganizationDomain>();
     public ICollection<Membership> Memberships { get; set; } = new List<Membership>();

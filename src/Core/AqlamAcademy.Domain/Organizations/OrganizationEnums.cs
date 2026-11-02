@@ -14,6 +14,14 @@ public enum OrganizationStatus
     Archived = 3
 }
 
+/// <summary>How dates are shown to the organization's users.</summary>
+public enum CalendarDisplay
+{
+    Gregorian = 1,
+    Hijri = 2,
+    Both = 3
+}
+
 /// <summary>Where the organization's tenant data is stored.</summary>
 public enum IsolationTier
 {
@@ -60,5 +68,6 @@ public enum MembershipSource
     ActivationCode = 4,
     JoinCode = 5,
     BulkImport = 6,
-    Sso = 7
+    Sso = 7,
+    ParentLink = 8      // a parent linked to a student of the organization
 }

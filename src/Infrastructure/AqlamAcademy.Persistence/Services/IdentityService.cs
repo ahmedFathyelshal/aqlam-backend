@@ -152,19 +152,23 @@ public class IdentityService : IIdentityService
 
     private async Task<Result<Guid>> AssignRoleAndProfileAsync(ApplicationUser user, UserType userType)
     {
-        string roleName = userType switch
+        string? roleName = userType switch
         {
             UserType.Teacher => "Teacher",
             UserType.Student => "Student",
             UserType.Assistant => "Assistant",
+            UserType.Parent => null,
             _ => throw new ArgumentOutOfRangeException(nameof(userType), userType, null)
         };
 
         // Assign Role
-        var roleResult = await _userManager.AddToRoleAsync(user, roleName);
-        if (!roleResult.Succeeded)
+        if (roleName is not null)
         {
-            return Result<Guid>.Failure(roleResult.Errors.Select(e => e.Description));
+            var roleResult = await _userManager.AddToRoleAsync(user, roleName);
+            if (!roleResult.Succeeded)
+            {
+                return Result<Guid>.Failure(roleResult.Errors.Select(e => e.Description));
+            }
         }
 
         // Create Business Profile

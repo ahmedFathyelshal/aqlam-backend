@@ -4,6 +4,8 @@ using AqlamAcademy.Application.Common.Models;
 using AqlamAcademy.Api.Infrastructure;
 using AqlamAcademy.Api.Infrastructure.DependencyInjection;
 using AqlamAcademy.Application.Features.Organizations.Members;
+using AqlamAcademy.Application.Features.Communication;
+using AqlamAcademy.Application.Features.Parents;
 using MediatR;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
@@ -51,4 +53,31 @@ public class MeController : ControllerBase
         var memberships = await _memberships.GetUserMembershipsAsync(userId, cancellationToken);
         return Ok(Result<IReadOnlyList<MembershipSummaryDto>>.Success(memberships));
     }
+
+    /// <summary>The user's notifications across organizations, newest first, with the unread count.</summary>
+    [HttpGet("notifications")]
+    public async Task<IActionResult> Notifications([FromQuery] bool unreadOnly, [FromQuery] int take = 30, CancellationToken cancellationToken = default) =>
+        Ok(await _mediator.Send(new ListNotificationsQuery(unreadOnly, take), cancellationToken));
+
+    [HttpPost("notifications/{id:guid}/read")]
+    public async Task<IActionResult> MarkRead(Guid id, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new MarkNotificationsReadCommand(id), cancellationToken));
+
+    [HttpPost("notifications/read-all")]
+    public async Task<IActionResult> MarkAllRead(CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new MarkNotificationsReadCommand(null), cancellationToken));
+
+    /// <summary>Children linked to the signed-in parent, with the organizations where the parent can follow them.</summary>
+    [HttpGet("children")]
+    public async Task<IActionResult> Children(CancellationToken cancellationToken) =>
+        Ok(await _mediator.Send(new MyChildrenQuery(), cancellationToken));
+
+    /// <summary>Links the signed-in user as a parent with the code the school gave the family.</summary>
+    [HttpPost("children")]
+    [EnableRateLimiting(PresentationDependencyInjection.AuthRateLimitPolicy)] // slows down code guessing
+    public async Task<IActionResult> LinkChild([FromBody] RedeemParentInviteCommand command, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(command, cancellationToken));
+
+    private IActionResult ToActionResult(Result result) =>
+        result.Succeeded ? Ok(result) : this.ToFailureResult(result);
 }

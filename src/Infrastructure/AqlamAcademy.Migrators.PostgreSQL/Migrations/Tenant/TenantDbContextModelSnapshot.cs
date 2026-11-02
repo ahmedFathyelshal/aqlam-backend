@@ -431,6 +431,87 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations.Tenant
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
+            modelBuilder.Entity("AqlamAcademy.Domain.Attendance.AttendanceRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("SessionId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("AttendanceRecords", "Classes");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Attendance.AttendanceSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClassGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("LastModifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<TimeOnly?>("StartTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<DateTime>("TakenAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TakenByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("ClassGroupId", "Date", "StartTime")
+                        .IsUnique();
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("ClassGroupId", "Date", "StartTime"), false);
+
+                    b.ToTable("AttendanceSessions", "Classes");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
             modelBuilder.Entity("AqlamAcademy.Domain.Classes.Branch", b =>
                 {
                     b.Property<Guid>("Id")
@@ -632,6 +713,64 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations.Tenant
                         .IsUnique();
 
                     b.ToTable("TeachingAssignments", "Classes");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Communication.Announcement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Audience")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("AuthorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(5000)
+                        .HasColumnType("character varying(5000)");
+
+                    b.Property<Guid?>("ClassGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("GradeId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("PublishedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("RecipientCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("SendEmail")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassGroupId");
+
+                    b.HasIndex("PublishedAtUtc");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Announcements", "Classes");
 
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
@@ -1127,6 +1266,24 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations.Tenant
                     b.Navigation("Question");
                 });
 
+            modelBuilder.Entity("AqlamAcademy.Domain.Attendance.AttendanceRecord", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Attendance.AttendanceSession", null)
+                        .WithMany("Records")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Attendance.AttendanceSession", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Classes.ClassGroup", null)
+                        .WithMany()
+                        .HasForeignKey("ClassGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AqlamAcademy.Domain.Classes.ClassGroup", b =>
                 {
                     b.HasOne("AqlamAcademy.Domain.Classes.Branch", "Branch")
@@ -1218,6 +1375,11 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations.Tenant
             modelBuilder.Entity("AqlamAcademy.Domain.Assessments.Quiz", b =>
                 {
                     b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Attendance.AttendanceSession", b =>
+                {
+                    b.Navigation("Records");
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Classes.ClassGroup", b =>

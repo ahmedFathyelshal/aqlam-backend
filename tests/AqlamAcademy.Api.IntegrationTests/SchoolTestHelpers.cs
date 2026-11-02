@@ -56,3 +56,15 @@ public sealed class TestSchool(ApiFactory factory, HttpClient owner, string slug
     private static async Task<string> RegisterAsync(HttpClient client, int userType, string prefix) =>
         (await TestUsers.RegisterAndLoginAsync(client, userType, prefix)).GetProperty("data").GetProperty("userName").GetString()!;
 }
+
+public static class FamilyTestHelpers
+{
+    /// <summary>A freshly registered parent account (not yet a member of any organization).</summary>
+    public static async Task<(HttpClient Client, string UserName, string UserId)> ParentAsync(ApiFactory factory, string prefix = "par")
+    {
+        var client = factory.CreateBrowserClient();
+        var userName = (await TestUsers.RegisterAndLoginAsync(client, TestUsers.Parent, prefix)).GetProperty("data").GetProperty("userName").GetString()!;
+        var userId = (await client.GetFromJsonAsync<JsonElement>("/api/Auth/me")).GetProperty("data").GetProperty("id").GetString()!;
+        return (client, userName, userId);
+    }
+}

@@ -38,6 +38,9 @@ public class TenantDbContext : MultiTenantDbContext
     public DbSet<AqlamAcademy.Domain.Classes.ClassGroup> ClassGroups => Set<AqlamAcademy.Domain.Classes.ClassGroup>();
     public DbSet<AqlamAcademy.Domain.Classes.ClassStudent> ClassStudents => Set<AqlamAcademy.Domain.Classes.ClassStudent>();
     public DbSet<AqlamAcademy.Domain.Classes.TeachingAssignment> TeachingAssignments => Set<AqlamAcademy.Domain.Classes.TeachingAssignment>();
+    public DbSet<AqlamAcademy.Domain.Attendance.AttendanceSession> AttendanceSessions => Set<AqlamAcademy.Domain.Attendance.AttendanceSession>();
+    public DbSet<AqlamAcademy.Domain.Attendance.AttendanceRecord> AttendanceRecords => Set<AqlamAcademy.Domain.Attendance.AttendanceRecord>();
+    public DbSet<AqlamAcademy.Domain.Communication.Announcement> Announcements => Set<AqlamAcademy.Domain.Communication.Announcement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

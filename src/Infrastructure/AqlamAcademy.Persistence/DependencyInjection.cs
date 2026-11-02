@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -76,6 +76,21 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationPolicyReader, OrganizationPolicyReader>();
         services.AddScoped<LearnerAccess>();
         services.AddScoped<ClassEnrollmentSync>();
+        services.AddScoped<AqlamAcademy.Application.Features.Communication.INotifier, Notifier>();
+        services.AddScoped<AqlamAcademy.Application.Features.Communication.INotificationInbox, NotificationInbox>();
+        services.AddScoped<AqlamAcademy.Application.Features.Communication.IAnnouncementService, AnnouncementService>();
+        services.AddScoped<AqlamAcademy.Application.Features.Attendance.IAttendanceService, AttendanceService>();
+        services.AddScoped<AqlamAcademy.Application.Features.Parents.IParentService, ParentService>();
+        services.AddScoped<AqlamAcademy.Application.Features.Organizations.Settings.IOrganizationSettingsService, OrganizationSettingsService>();
+
+        // Email: queued and sent in the background; logged only when no SMTP host is configured.
+        services.Configure<Messaging.EmailSettings>(configuration.GetSection(Messaging.EmailSettings.SectionName));
+        services.AddSingleton<Messaging.EmailQueue>();
+        services.AddHostedService<Messaging.EmailDispatcher>();
+        if (string.IsNullOrWhiteSpace(configuration[$"{Messaging.EmailSettings.SectionName}:SmtpHost"]))
+            services.AddSingleton<Messaging.IEmailSender, Messaging.LoggingEmailSender>();
+        else
+            services.AddSingleton<Messaging.IEmailSender, Messaging.SmtpEmailSender>();
         services.AddScoped<AqlamAcademy.Application.Features.Classes.IClassService, ClassService>();
         services.AddScoped<AqlamAcademy.Application.Features.Assessments.IAssessmentService, AssessmentService>();
         services.AddScoped<AqlamAcademy.Application.Features.Assessments.IAssignmentService, AssignmentService>();

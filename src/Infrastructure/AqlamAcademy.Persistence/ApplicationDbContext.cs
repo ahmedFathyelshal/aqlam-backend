@@ -39,6 +39,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Membership> Memberships => Set<Membership>();
     public DbSet<JoinCode> JoinCodes => Set<JoinCode>();
     public DbSet<AqlamAcademy.Domain.Learning.Enrollment> Enrollments => Set<AqlamAcademy.Domain.Learning.Enrollment>();
+    public DbSet<ParentLink> ParentLinks => Set<ParentLink>();
+    public DbSet<ParentInvite> ParentInvites => Set<ParentInvite>();
+    public DbSet<AqlamAcademy.Domain.Communication.Notification> Notifications => Set<AqlamAcademy.Domain.Communication.Notification>();
 
     // ASP.NET Data Protection key ring (shared by all API instances)
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
