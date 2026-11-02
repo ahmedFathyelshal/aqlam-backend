@@ -701,7 +701,12 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("ReplacedByTokenId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "Status");
 
                     b.ToTable("UserRefreshTokens", "Identity");
                 });

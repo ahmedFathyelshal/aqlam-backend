@@ -13,4 +13,7 @@
   <Folder Name="/src/Web/">
     <Project Path="src/Web/AqlamAcademy.Api/AqlamAcademy.Api.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AqlamAcademy.Api.IntegrationTests/AqlamAcademy.Api.IntegrationTests.csproj" />
+  </Folder>
 </Solution>

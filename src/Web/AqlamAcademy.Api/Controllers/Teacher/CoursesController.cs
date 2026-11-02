@@ -1,4 +1,5 @@
 using AqlamAcademy.Application.Features.Teacher.Courses.Commands;
+using AqlamAcademy.Api.Infrastructure;
 using AqlamAcademy.Application.Features.Teacher.Courses.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +9,7 @@ namespace AqlamAcademy.Api.Controllers.Teacher;
 
 [Route("api/teacher/[controller]")]
 [ApiController]
-// [Authorize(Roles = "Teacher")] // Uncomment when Identity is fully wired in the frontend
+[Authorize(Roles = "Teacher")]
 public class CoursesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -26,7 +27,7 @@ public class CoursesController : ControllerBase
         if (result.Succeeded)
             return Ok(result);
             
-        return BadRequest(result);
+        return this.ToFailureResult(result);
     }
 
     [HttpGet("{id}/draft")]
@@ -38,7 +39,7 @@ public class CoursesController : ControllerBase
         if (result.Succeeded)
             return Ok(result);
             
-        return NotFound(result);
+        return this.ToFailureResult(result);
     }
 
     [HttpPut("{id}/identity")]
@@ -51,7 +52,7 @@ public class CoursesController : ControllerBase
         if (result.Succeeded)
             return Ok(result);
             
-        return BadRequest(result);
+        return this.ToFailureResult(result);
     }
 
     [HttpPut("{id}/commercials")]
@@ -64,7 +65,7 @@ public class CoursesController : ControllerBase
         if (result.Succeeded)
             return Ok(result);
             
-        return BadRequest(result);
+        return this.ToFailureResult(result);
     }
 
     [HttpPut("{id}/media")]
@@ -77,7 +78,7 @@ public class CoursesController : ControllerBase
         if (result.Succeeded)
             return Ok(result);
             
-        return BadRequest(result);
+        return this.ToFailureResult(result);
     }
 
     [HttpPut("{id}/curriculum")]
@@ -90,6 +91,6 @@ public class CoursesController : ControllerBase
         if (result.Succeeded)
             return Ok(result);
             
-        return BadRequest(result);
+        return this.ToFailureResult(result);
     }
 }

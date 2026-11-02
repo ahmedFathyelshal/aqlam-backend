@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
 using System.Reflection;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Http;
 using System.Security.Cryptography;
 using Mapster;
 using MapsterMapper;
@@ -19,6 +21,7 @@ namespace AqlamAcademy.Api.Infrastructure.DependencyInjection;
 public static class PresentationDependencyInjection
 {
     private const string CorsPolicy = "AqlamCorsPolicy";
+    public const string AuthRateLimitPolicy = "AuthRateLimit";
 
     public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration)
     {
@@ -88,6 +91,22 @@ public static class PresentationDependencyInjection
             });
         });
 
+        // 5. Rate limiting: slow down credential stuffing on login/register (per client IP)
+        var authPermitsPerMinute = configuration.GetValue("RateLimiting:AuthPermitsPerMinute", 10);
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy(AuthRateLimitPolicy, httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = authPermitsPerMinute,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    }));
+        });
+
         return services;
     }
 
@@ -113,6 +132,9 @@ public static class PresentationDependencyInjection
         // 6. Authentication & Authorization Middleware
         app.UseAuthentication();
         app.UseAuthorization();
+
+        // 7. Rate limiting (after routing so endpoint policies apply)
+        app.UseRateLimiter();
 
         return app;
     }
