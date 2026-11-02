@@ -7,7 +7,8 @@ public record MemberDto(
     IReadOnlyList<string> Roles,
     string Status,
     string Source,
-    DateTime JoinedAtUtc);
+    DateTime JoinedAtUtc,
+    string? Gender = null);
 
 public record JoinCodeDto(
     Guid Id,

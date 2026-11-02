@@ -54,6 +54,11 @@ public class MembersController : ControllerBase
     public async Task<IActionResult> UpdateRoles(Guid userId, [FromBody] UpdateRolesRequest request, CancellationToken cancellationToken) =>
         ToActionResult(await _mediator.Send(new UpdateMemberRolesCommand(userId, request.Roles), cancellationToken));
 
+    [HttpPut("{userId:guid}/gender")]
+    [HasPermission(Permissions.MembersManage)]
+    public async Task<IActionResult> SetGender(Guid userId, [FromBody] SetGenderRequest request, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new SetMemberGenderCommand(userId, request.Gender), cancellationToken));
+
     [HttpPost("{userId:guid}/approve")]
     [HasPermission(Permissions.MembersManage)]
     public async Task<IActionResult> Approve(Guid userId, CancellationToken cancellationToken) =>
@@ -65,6 +70,7 @@ public class MembersController : ControllerBase
         ToActionResult(await _mediator.Send(new RemoveMemberCommand(userId), cancellationToken));
 
     public record UpdateRolesRequest(IReadOnlyList<string> Roles);
+    public record SetGenderRequest(AqlamAcademy.Domain.Classes.Gender? Gender);
 
     private IActionResult ToActionResult(Application.Common.Models.Result result) =>
         result.Succeeded ? Ok(result) : this.ToFailureResult(result);

@@ -1,3 +1,4 @@
+using AqlamAcademy.Domain.Classes;
 using System.Security.Cryptography;
 using AqlamAcademy.Application.Common.Interfaces;
 using AqlamAcademy.Application.Common.Models;
@@ -32,10 +33,10 @@ public class OrganizationMembersService : IOrganizationMembersService
                 join u in _context.Users.AsNoTracking() on m.UserId equals u.Id
                 where m.OrganizationId == organizationId && m.Status != MembershipStatus.Left
                 orderby m.JoinedAtUtc
-                select new { Membership = m, u.UserName, u.FullName })
+                select new { Membership = m, u.UserName, u.FullName, u.Gender })
             .ToListAsync(cancellationToken);
 
-        return rows.Select(r => ToDto(r.Membership, r.UserName!, r.FullName)).ToList();
+        return rows.Select(r => ToDto(r.Membership, r.UserName!, r.FullName, r.Gender)).ToList();
     }
 
     public async Task<Result<MemberDto>> AddExistingUserAsync(Guid organizationId, string userName, OrganizationRole roles, CancellationToken cancellationToken)
@@ -64,7 +65,7 @@ public class OrganizationMembersService : IOrganizationMembersService
         await _context.SaveChangesAsync(cancellationToken);
         _memberships.Invalidate(user.Id, organizationId);
 
-        return Result<MemberDto>.Success(ToDto(membership, user.UserName!, user.FullName));
+        return Result<MemberDto>.Success(ToDto(membership, user.UserName!, user.FullName, user.Gender));
     }
 
     public async Task<Result<MemberDto>> UpdateRolesAsync(Guid organizationId, Guid userId, OrganizationRole roles, CancellationToken cancellationToken)
@@ -80,7 +81,19 @@ public class OrganizationMembersService : IOrganizationMembersService
         await _context.SaveChangesAsync(cancellationToken);
         _memberships.Invalidate(userId, organizationId);
 
-        return Result<MemberDto>.Success(ToDto(membership, user!.UserName!, user.FullName));
+        return Result<MemberDto>.Success(ToDto(membership, user!.UserName!, user.FullName, user.Gender));
+    }
+
+    public async Task<Result<MemberDto>> SetGenderAsync(Guid organizationId, Guid userId, Gender? gender, CancellationToken cancellationToken)
+    {
+        var (membership, user) = await FindCurrentMembershipAsync(organizationId, userId, cancellationToken);
+        if (membership is null)
+            return Result<MemberDto>.NotFound("Member not found.");
+
+        user!.Gender = gender;
+        await _userManager.UpdateAsync(user);
+
+        return Result<MemberDto>.Success(ToDto(membership, user.UserName!, user.FullName, user.Gender));
     }
 
     public async Task<Result<MemberDto>> ApproveAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken)
@@ -95,7 +108,7 @@ public class OrganizationMembersService : IOrganizationMembersService
         await _context.SaveChangesAsync(cancellationToken);
         _memberships.Invalidate(userId, organizationId);
 
-        return Result<MemberDto>.Success(ToDto(membership, user!.UserName!, user.FullName));
+        return Result<MemberDto>.Success(ToDto(membership, user!.UserName!, user.FullName, user.Gender));
     }
 
     public async Task<Result<bool>> RemoveAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken)
@@ -228,14 +241,15 @@ public class OrganizationMembersService : IOrganizationMembersService
         return (membership, user);
     }
 
-    private static MemberDto ToDto(Membership m, string userName, string fullName) => new(
+    private static MemberDto ToDto(Membership m, string userName, string fullName, Gender? gender) => new(
         m.UserId,
         userName,
         fullName,
         Enum.GetValues<OrganizationRole>().Where(r => r != OrganizationRole.None && m.Roles.HasFlag(r)).Select(r => r.ToString()).ToList(),
         m.Status.ToString(),
         m.Source.ToString(),
-        m.JoinedAtUtc);
+        m.JoinedAtUtc,
+        gender?.ToString());
 
     private static JoinCodeDto ToDto(JoinCode c) => new(
         c.Id, c.Code, c.Role.ToString(), c.RequiresApproval, c.ExpiresAtUtc, c.MaxUses, c.UsesCount, c.IsActive);

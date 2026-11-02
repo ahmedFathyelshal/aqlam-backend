@@ -15,10 +15,14 @@ public class CourseService : ICourseService
     private const string ConcurrentEditMessage = "The curriculum was changed by someone else. Reload to see the latest version.";
 
     private readonly TenantDbContext _context;
+    private readonly ICurrentOrganization _currentOrganization;
+    private readonly ClassEnrollmentSync _classEnrollments;
 
-    public CourseService(TenantDbContext context)
+    public CourseService(TenantDbContext context, ICurrentOrganization currentOrganization, ClassEnrollmentSync classEnrollments)
     {
         _context = context;
+        _currentOrganization = currentOrganization;
+        _classEnrollments = classEnrollments;
     }
 
     public async Task<CourseDraftDto> CreateDraftAsync(Course course, CancellationToken cancellationToken)
@@ -216,6 +220,10 @@ public class CourseService : ICourseService
         course.Status = status;
         course.LastModifiedAtUtc = DateTime.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
+
+        // A class subject space going live gives its students access.
+        if (_currentOrganization.OrganizationId is { } orgId)
+            await _classEnrollments.EnrollRostersOfCourseAsync(orgId, course, cancellationToken);
 
         return Result<CourseDraftDto>.Success(course.Adapt<CourseDraftDto>());
     }

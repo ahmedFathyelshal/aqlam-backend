@@ -13,6 +13,7 @@ public static class Permissions
     public const string CoursesPublish = "courses.publish";
     public const string MembersView = "members.view";
     public const string MembersManage = "members.manage";
+    public const string ClassesManage = "classes.manage";
     public const string AttendanceTake = "attendance.take";
     public const string GradesEdit = "grades.edit";
     public const string FinanceView = "finance.view";
@@ -20,9 +21,9 @@ public static class Permissions
 
     private static readonly Dictionary<OrganizationRole, string[]> RoleGrants = new()
     {
-        [OrganizationRole.Owner] = [CoursesView, CoursesEdit, CoursesPublish, MembersView, MembersManage, AttendanceTake, GradesEdit, FinanceView, OrganizationSettings],
-        [OrganizationRole.Admin] = [CoursesView, CoursesEdit, CoursesPublish, MembersView, MembersManage, AttendanceTake, GradesEdit, OrganizationSettings],
-        [OrganizationRole.AcademicCoordinator] = [CoursesView, CoursesEdit, CoursesPublish, MembersView, AttendanceTake, GradesEdit],
+        [OrganizationRole.Owner] = [CoursesView, CoursesEdit, CoursesPublish, MembersView, MembersManage, ClassesManage, AttendanceTake, GradesEdit, FinanceView, OrganizationSettings],
+        [OrganizationRole.Admin] = [CoursesView, CoursesEdit, CoursesPublish, MembersView, MembersManage, ClassesManage, AttendanceTake, GradesEdit, OrganizationSettings],
+        [OrganizationRole.AcademicCoordinator] = [CoursesView, CoursesEdit, CoursesPublish, MembersView, ClassesManage, AttendanceTake, GradesEdit],
         [OrganizationRole.Teacher] = [CoursesView, CoursesEdit, MembersView, AttendanceTake, GradesEdit],
         [OrganizationRole.Assistant] = [CoursesView, MembersView, AttendanceTake],
         [OrganizationRole.Finance] = [FinanceView, MembersView],

@@ -10,6 +10,7 @@ public interface IOrganizationMembersService
     Task<IReadOnlyList<MemberDto>> ListAsync(Guid organizationId, CancellationToken cancellationToken);
     Task<Result<MemberDto>> AddExistingUserAsync(Guid organizationId, string userName, OrganizationRole roles, CancellationToken cancellationToken);
     Task<Result<MemberDto>> UpdateRolesAsync(Guid organizationId, Guid userId, OrganizationRole roles, CancellationToken cancellationToken);
+    Task<Result<MemberDto>> SetGenderAsync(Guid organizationId, Guid userId, AqlamAcademy.Domain.Classes.Gender? gender, CancellationToken cancellationToken);
     Task<Result<MemberDto>> ApproveAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken);
     Task<Result<bool>> RemoveAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken);
 

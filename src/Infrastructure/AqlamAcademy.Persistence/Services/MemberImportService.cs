@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using AqlamAcademy.Application.Common.Interfaces;
 using AqlamAcademy.Application.Common.Models;
 using AqlamAcademy.Application.Features.Organizations.Members;
+using AqlamAcademy.Domain.Classes;
 using AqlamAcademy.Domain.Organizations;
 using AqlamAcademy.Domain.Staff;
 using AqlamAcademy.Domain.Students;
@@ -15,14 +16,14 @@ using Microsoft.Extensions.Logging;
 namespace AqlamAcademy.Infrastructure.Persistence.Services;
 
 /// <summary>
-/// Creates accounts and memberships from an Excel sheet (columns: FullName, Role, Phone, Email).
+/// Creates accounts and memberships from an Excel sheet (columns: FullName, Role, Phone, Email, Gender).
 /// Each row is its own transaction: valid rows are created even when other rows fail.
 /// </summary>
 public class MemberImportService : IMemberImportService
 {
     public const int MaxRows = 500;
     private const string PasswordAlphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
-    private static readonly string[] Columns = ["FullName", "Role", "Phone", "Email"];
+    private static readonly string[] Columns = ["FullName", "Role", "Phone", "Email", "Gender"];
 
     /// <summary>Roles an import may grant, with the matching platform role (null = none).</summary>
     private static readonly Dictionary<string, (OrganizationRole Role, string? PlatformRole)> ImportableRoles =
@@ -59,7 +60,7 @@ public class MemberImportService : IMemberImportService
 
         var help = workbook.AddWorksheet("Instructions");
         help.Cell(1, 1).Value = "One member per row on the Members sheet. Do not change the header row.";
-        help.Cell(2, 1).Value = "FullName: required. Role: Student (default), Parent, Teacher or Assistant. Phone and Email: optional.";
+        help.Cell(2, 1).Value = "FullName: required. Role: Student (default), Parent, Teacher or Assistant. Phone and Email: optional. Gender: Male or Female (ذكر / أنثى), needed for boys' and girls' classes.";
         help.Cell(3, 1).Value = $"Up to {MaxRows} rows per file. Usernames and temporary passwords are generated and shown once after import.";
 
         using var stream = new MemoryStream();
@@ -138,6 +139,7 @@ public class MemberImportService : IMemberImportService
                 PhoneNumber = row.Phone,
                 Email = row.Email,
                 EmailConfirmed = row.Email is not null,
+                Gender = ParseGender(row.Gender),
                 MustChangePassword = true
             };
 
@@ -196,6 +198,8 @@ public class MemberImportService : IMemberImportService
             errors.Add("Phone must contain 8 to 15 digits.");
         if (row.Email is not null && !Regex.IsMatch(row.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
             errors.Add("Email is not valid.");
+        if (row.Gender is not null && ParseGender(row.Gender) is null)
+            errors.Add("Gender must be Male or Female.");
         if (errors.Count == 0 && knownPeople.Contains(PersonKey(row.FullName, row.Phone)))
             errors.Add("Possible duplicate: a member with the same name and phone already exists.");
         return errors;
@@ -228,9 +232,10 @@ public class MemberImportService : IMemberImportService
             var role = Read(row, "Role") ?? "Student";
             var phone = Read(row, "Phone")?.Replace(" ", string.Empty).Replace("-", string.Empty);
             var email = Read(row, "Email");
+            var gender = Read(row, "Gender");
             if (fullName.Length == 0 && phone is null && email is null)
                 continue; // blank line
-            rows.Add(new ImportRow(row.RowNumber(), fullName, role, phone, email));
+            rows.Add(new ImportRow(row.RowNumber(), fullName, role, phone, email, gender));
         }
 
         return rows;
@@ -257,5 +262,12 @@ public class MemberImportService : IMemberImportService
     private static string PersonKey(string fullName, string? phone) =>
         $"{Regex.Replace(fullName.Trim().ToLowerInvariant(), @"\s+", " ")}|{phone}";
 
-    private sealed record ImportRow(int RowNumber, string FullName, string Role, string? Phone, string? Email);
+    private static Gender? ParseGender(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        "male" or "m" or "ذكر" => Gender.Male,
+        "female" or "f" or "أنثى" or "انثى" => Gender.Female,
+        _ => null
+    };
+
+    private sealed record ImportRow(int RowNumber, string FullName, string Role, string? Phone, string? Email, string? Gender);
 }

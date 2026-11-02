@@ -431,6 +431,211 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations.Tenant
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
+            modelBuilder.Entity("AqlamAcademy.Domain.Classes.Branch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Gender")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Branches", "Classes");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Classes.ClassGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("Capacity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("CurriculumId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Gender")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("GradeId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("HomeroomTeacherUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("LastModifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("HomeroomTeacherUserId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("ClassGroups", "Classes");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Classes.ClassStudent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AddedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ClassGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ClassGroupId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ClassStudents", "Classes");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Classes.TeachingAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClassGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("SubjectId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SubjectName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("TeacherUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("TeacherUserId");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("ClassGroupId", "SubjectName")
+                        .IsUnique();
+
+                    b.ToTable("TeachingAssignments", "Classes");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
             modelBuilder.Entity("AqlamAcademy.Domain.Courses.Course", b =>
                 {
                     b.Property<Guid>("Id")
@@ -922,6 +1127,61 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations.Tenant
                     b.Navigation("Question");
                 });
 
+            modelBuilder.Entity("AqlamAcademy.Domain.Classes.ClassGroup", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Classes.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.OwnsMany("AqlamAcademy.Domain.Classes.WeeklySlot", "Schedule", b1 =>
+                        {
+                            b1.Property<Guid>("ClassGroupId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAdd();
+
+                            b1.Property<int>("Day");
+
+                            b1.Property<TimeOnly>("EndTime");
+
+                            b1.Property<TimeOnly>("StartTime");
+
+                            b1.HasKey("ClassGroupId", "__synthesizedOrdinal");
+
+                            b1.ToTable("ClassGroups", "Classes");
+
+                            b1
+                                .ToJson("Schedule")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ClassGroupId");
+                        });
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("Schedule");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Classes.ClassStudent", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Classes.ClassGroup", null)
+                        .WithMany("Students")
+                        .HasForeignKey("ClassGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Classes.TeachingAssignment", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Classes.ClassGroup", null)
+                        .WithMany("Assignments")
+                        .HasForeignKey("ClassGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AqlamAcademy.Domain.Courses.CourseChapter", b =>
                 {
                     b.HasOne("AqlamAcademy.Domain.Courses.Course", "Course")
@@ -958,6 +1218,13 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations.Tenant
             modelBuilder.Entity("AqlamAcademy.Domain.Assessments.Quiz", b =>
                 {
                     b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Classes.ClassGroup", b =>
+                {
+                    b.Navigation("Assignments");
+
+                    b.Navigation("Students");
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Courses.Course", b =>

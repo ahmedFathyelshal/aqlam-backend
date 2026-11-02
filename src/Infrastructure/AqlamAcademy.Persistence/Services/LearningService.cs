@@ -287,24 +287,8 @@ public class LearningService : ILearningService
             .ToList();
     }
 
-    private void UpsertEnrollment(Enrollment? enrollment, Guid userId, Guid orgId, Course course, EnrollmentSource source)
-    {
-        var now = DateTime.UtcNow;
-        if (enrollment is null)
-        {
-            enrollment = new Enrollment { UserId = userId, OrganizationId = orgId, CourseId = course.Id };
-            _platform.Enrollments.Add(enrollment);
-        }
-
-        // New or renewed access starts now (expired/revoked enrollments are reused: one row per student and course).
-        enrollment.CourseTitle = course.Title;
-        enrollment.Source = source;
-        enrollment.Status = EnrollmentStatus.Active;
-        enrollment.StartsAtUtc = now;
-        enrollment.ExpiresAtUtc = course.AccessExpiryPolicy == AccessExpiryPolicy.Limited && course.AccessDurationDays is > 0
-            ? now.AddDays(course.AccessDurationDays.Value)
-            : null;
-    }
+    private void UpsertEnrollment(Enrollment? enrollment, Guid userId, Guid orgId, Course course, EnrollmentSource source) =>
+        EnrollmentWriter.Upsert(_platform, enrollment, userId, orgId, course, source);
 
     private static Result<T> Fail<T>(Result failure) =>
         Result<T>.Failure(failure.ErrorType, failure.Errors);

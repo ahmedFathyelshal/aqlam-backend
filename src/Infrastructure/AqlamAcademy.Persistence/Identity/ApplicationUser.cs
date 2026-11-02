@@ -7,6 +7,9 @@ public class ApplicationUser : IdentityUser<Guid>, ISoftDelete
 {
     public string FullName { get; set; } = string.Empty;
 
+    /// <summary>Needed for gender-separated classes (Saudi schools); optional elsewhere.</summary>
+    public AqlamAcademy.Domain.Classes.Gender? Gender { get; set; }
+
     /// <summary>Set for accounts created by an administrator (e.g. bulk import) with a temporary password.</summary>
     public bool MustChangePassword { get; set; }
     
