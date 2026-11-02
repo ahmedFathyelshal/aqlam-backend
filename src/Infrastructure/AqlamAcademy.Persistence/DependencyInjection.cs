@@ -59,6 +59,7 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddMemoryCache();
         services.AddScoped<ILookupService, LookupService>();
+        services.AddScoped<ICourseService, CourseService>();
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
 
         return services;

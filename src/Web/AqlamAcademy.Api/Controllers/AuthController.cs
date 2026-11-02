@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using MediatR;
 using MapsterMapper;
 using AqlamAcademy.Api.Contracts.Auth;
@@ -171,12 +173,16 @@ public class AuthController : ControllerBase
 
     private void SetTokenCookie(string cookieName, string token, DateTime expires)
     {
+        var isDevelopment = HttpContext.RequestServices
+            .GetRequiredService<IWebHostEnvironment>()
+            .IsDevelopment();
+
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
             Expires = expires,
-            Secure = true, // Must be true in production (requires HTTPS), and required when SameSite is None
-            SameSite = SameSiteMode.None,
+            Secure = !isDevelopment,
+            SameSite = SameSiteMode.Strict,
             Path = "/"
         };
         Response.Cookies.Append(cookieName, token, cookieOptions);

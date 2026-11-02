@@ -48,6 +48,7 @@ public class ApplicationDbInitializer
         await SeedDataFromJsonAsync("education_stages.json", _context.EducationStages);
         await SeedDataFromJsonAsync("education_grades.json", _context.EducationGrades);
         await SeedDataFromJsonAsync("subjects.json", _context.Subjects);
+        await SeedDataFromJsonAsync("course_states.json", _context.CourseStates);
     }
 
     private async Task SeedDataFromJsonAsync<TEntity>(string fileName, DbSet<TEntity> dbSet) where TEntity : class

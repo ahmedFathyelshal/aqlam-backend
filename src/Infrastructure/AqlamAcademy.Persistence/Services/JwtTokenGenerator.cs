@@ -2,7 +2,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
+using System.Security.Cryptography;
 using AqlamAcademy.Application.Common.Interfaces;
 
 namespace AqlamAcademy.Infrastructure.Persistence.Services;
@@ -19,7 +19,9 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     public string GenerateToken(Guid userId, string userName, string email, IList<string> roles, out DateTime expiration)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(_jwtSettings.Secret);
+        using var rsa = RSA.Create();
+        rsa.FromXmlString(_jwtSettings.Rsa.PrivateKeyXml);
+        var privateKey = new RsaSecurityKey(rsa);
 
         var claims = new List<Claim>
         {
@@ -42,10 +44,11 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             Expires = expiration,
             Issuer = _jwtSettings.Issuer,
             Audience = _jwtSettings.Audience,
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            SigningCredentials = new SigningCredentials(privateKey, SecurityAlgorithms.RsaSha256) { CryptoProviderFactory = new CryptoProviderFactory { CacheSignatureProviders = false } }
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
     }
 }
+

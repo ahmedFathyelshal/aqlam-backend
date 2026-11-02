@@ -74,4 +74,21 @@ public class LookupService : ILookupService
 
         return subjects!;
     }
+
+    public async Task<IEnumerable<CourseStateDto>> GetCourseStatesAsync(CancellationToken cancellationToken)
+    {
+        var cacheKey = "CourseStates";
+        if (!_cache.TryGetValue(cacheKey, out IEnumerable<CourseStateDto>? states))
+        {
+            states = await _context.CourseStates
+                .Where(s => s.IsActive)
+                .OrderBy(s => s.OrderIndex)
+                .Select(s => new CourseStateDto(s.Id, s.NameEn, s.NameAr, s.OrderIndex))
+                .ToListAsync(cancellationToken);
+
+            _cache.Set(cacheKey, states, TimeSpan.FromHours(24));
+        }
+
+        return states!;
+    }
 }

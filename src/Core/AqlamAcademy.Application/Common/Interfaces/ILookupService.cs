@@ -7,4 +7,5 @@ public interface ILookupService
     Task<IEnumerable<EducationStageDto>> GetEducationStagesAsync(CancellationToken cancellationToken);
     Task<IEnumerable<EducationGradeDto>> GetEducationGradesAsync(int? stageId, CancellationToken cancellationToken);
     Task<IEnumerable<SubjectDto>> GetSubjectsAsync(CancellationToken cancellationToken);
+    Task<IEnumerable<CourseStateDto>> GetCourseStatesAsync(CancellationToken cancellationToken);
 }
