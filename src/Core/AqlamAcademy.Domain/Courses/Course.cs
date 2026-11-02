@@ -27,6 +27,12 @@ public class Course : BaseEntity
     public Enums.CourseStatus Status { get; set; } = Enums.CourseStatus.Draft;
     public CourseVisibility Visibility { get; set; } = CourseVisibility.Private;
 
+    /// <summary>
+    /// Incremented on every curriculum save; clients send the version they loaded so concurrent edits are
+    /// detected (409) instead of one editor silently overwriting another. Also an EF concurrency token.
+    /// </summary>
+    public int CurriculumVersion { get; set; }
+
     /// <summary>The staff member who created the course (ownership is the organization's).</summary>
     public Guid CreatedByUserId { get; set; }
 

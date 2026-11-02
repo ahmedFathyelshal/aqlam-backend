@@ -6,6 +6,8 @@ public record CourseDraftDto
 {
     public Guid? Id { get; init; }
     public string Status { get; init; } = "Draft";
+    public string Visibility { get; init; } = "Private";
+    public int CurriculumVersion { get; init; }
 
     public string? Title { get; init; }
     public string? Slug { get; init; }
@@ -61,3 +63,17 @@ public record LessonResourceDto
     public string Type { get; init; } = nameof(ResourceType.File);
     public bool IsDownloadable { get; init; } = true;
 }
+
+/// <summary>One row of the organization's course list (teacher dashboard).</summary>
+public record CourseSummaryDto(
+    Guid Id,
+    string Title,
+    string Status,
+    string Visibility,
+    int? CurriculumId,
+    int? GradeId,
+    int? SubjectId,
+    int ChapterCount,
+    int LessonCount,
+    DateTime CreatedAtUtc,
+    DateTime? LastModifiedAtUtc);
