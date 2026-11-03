@@ -25,6 +25,7 @@ public class CourseConfiguration : IEntityTypeConfiguration<Course>
         builder.Property(x => x.Subtitle).HasMaxLength(500);
         builder.Property(x => x.ThumbnailUrl).HasMaxLength(1000);
         builder.Property(x => x.PromoVideoUrl).HasMaxLength(1000);
+        builder.Property(x => x.CustomSubjectName).HasMaxLength(100);
 
         builder.Property(x => x.Price).HasColumnType("decimal(18,2)");
 

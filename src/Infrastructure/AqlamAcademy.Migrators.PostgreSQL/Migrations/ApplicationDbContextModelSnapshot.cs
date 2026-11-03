@@ -446,6 +446,9 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<int>("GradingScale")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 

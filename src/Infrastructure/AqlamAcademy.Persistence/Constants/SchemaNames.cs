@@ -11,5 +11,6 @@ public static class SchemaNames
     public const string Learning = "Learning";
     public const string Assessments = "Assessments";
     public const string Classes = "Classes";
+    public const string Academics = "Academics";
     public const string Communication = "Communication";
 }

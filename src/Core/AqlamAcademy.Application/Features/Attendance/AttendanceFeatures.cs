@@ -24,14 +24,35 @@ public record AttendanceEntryDto(DateOnly Date, TimeOnly? StartTime, Guid ClassG
 
 public record AttendanceMark(Guid UserId, AttendanceStatus Status, string? Note);
 
+public record AttendanceExportFile(byte[] Content, string FileName);
+
 public interface IAttendanceService
 {
     Task<Result<AttendanceSheetDto>> GetSheetAsync(Guid classId, DateOnly date, TimeOnly? startTime, CancellationToken cancellationToken);
     Task<Result<AttendanceSheetDto>> SaveSheetAsync(Guid classId, DateOnly date, TimeOnly? startTime, IReadOnlyList<AttendanceMark> marks, CancellationToken cancellationToken);
     Task<Result<IReadOnlyList<AttendanceSummaryRowDto>>> SummaryAsync(Guid classId, DateOnly from, DateOnly to, CancellationToken cancellationToken);
+    Task<Result<AttendanceExportFile>> ExportAsync(Guid classId, DateOnly from, DateOnly to, CancellationToken cancellationToken);
 
     /// <summary>A student's own record in the current organization (used by the student and by parents).</summary>
     Task<IReadOnlyList<AttendanceEntryDto>> HistoryOfAsync(Guid studentUserId, DateOnly from, DateOnly to, CancellationToken cancellationToken);
+}
+
+/// <summary>Students by date in a spreadsheet, for the school's own records and government reporting.</summary>
+public record ExportAttendanceQuery(Guid ClassId, DateOnly From, DateOnly To) : IRequest<Result<AttendanceExportFile>>;
+
+public class ExportAttendanceQueryValidator : AbstractValidator<ExportAttendanceQuery>
+{
+    public ExportAttendanceQueryValidator()
+    {
+        RuleFor(x => x.To).GreaterThanOrEqualTo(x => x.From).WithMessage("The end date must be after the start date.");
+        RuleFor(x => x).Must(x => x.To.DayNumber - x.From.DayNumber <= 366).WithMessage("Export at most one year at a time.");
+    }
+}
+
+public class ExportAttendanceQueryHandler(IAttendanceService attendance) : IRequestHandler<ExportAttendanceQuery, Result<AttendanceExportFile>>
+{
+    public Task<Result<AttendanceExportFile>> Handle(ExportAttendanceQuery r, CancellationToken cancellationToken) =>
+        attendance.ExportAsync(r.ClassId, r.From, r.To, cancellationToken);
 }
 
 public record GetAttendanceSheetQuery(Guid ClassId, DateOnly Date, TimeOnly? StartTime) : IRequest<Result<AttendanceSheetDto>>;

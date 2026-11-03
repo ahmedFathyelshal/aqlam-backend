@@ -22,7 +22,8 @@ public record ClassSummaryDto(
     string? HomeroomTeacherName,
     int? Capacity,
     int StudentCount,
-    IReadOnlyList<WeeklySlotDto> Schedule);
+    IReadOnlyList<WeeklySlotDto> Schedule,
+    Guid? AcademicYearId = null);
 
 public record ClassStudentDto(Guid UserId, string UserName, string FullName, string? Gender, DateTime AddedAtUtc);
 
@@ -34,7 +35,8 @@ public record TeachingAssignmentDto(
     string? TeacherUserName,
     string? TeacherName,
     Guid CourseId,
-    string? CourseStatus);
+    string? CourseStatus,
+    int? CurriculumId = null);
 
 public record ClassDetailDto(ClassSummaryDto Class, IReadOnlyList<ClassStudentDto> Students, IReadOnlyList<TeachingAssignmentDto> Assignments);
 
@@ -50,7 +52,8 @@ public record ClassInput(
     int? GradeId,
     Guid? HomeroomTeacherUserId,
     int? Capacity,
-    IReadOnlyList<WeeklySlotDto>? Schedule);
+    IReadOnlyList<WeeklySlotDto>? Schedule,
+    Guid? AcademicYearId = null);
 
 /// <summary>Branches, classes/groups, rosters and teacher assignments of the current organization.</summary>
 public interface IClassService
@@ -60,7 +63,7 @@ public interface IClassService
     Task<Result<bool>> DeleteBranchAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>mine = classes where the current user is homeroom teacher or teaches a subject.</summary>
-    Task<IReadOnlyList<ClassSummaryDto>> ListClassesAsync(bool mine, Guid? branchId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<ClassSummaryDto>> ListClassesAsync(bool mine, Guid? branchId, Guid? academicYearId, CancellationToken cancellationToken);
     Task<Result<ClassDetailDto>> GetClassAsync(Guid id, CancellationToken cancellationToken);
     Task<Result<ClassSummaryDto>> SaveClassAsync(Guid? id, ClassInput input, CancellationToken cancellationToken);
     Task<Result<bool>> DeleteClassAsync(Guid id, CancellationToken cancellationToken);
@@ -68,7 +71,7 @@ public interface IClassService
     Task<Result<IReadOnlyList<RosterResultDto>>> AddStudentsAsync(Guid classId, IReadOnlyList<string> userNames, CancellationToken cancellationToken);
     Task<Result<bool>> RemoveStudentAsync(Guid classId, Guid userId, CancellationToken cancellationToken);
 
-    Task<Result<TeachingAssignmentDto>> AssignTeacherAsync(Guid classId, int? subjectId, string? subjectName, Guid teacherUserId, CancellationToken cancellationToken);
+    Task<Result<TeachingAssignmentDto>> AssignTeacherAsync(Guid classId, int? subjectId, string? subjectName, Guid teacherUserId, int? curriculumId, CancellationToken cancellationToken);
     Task<Result<TeachingAssignmentDto>> ChangeTeacherAsync(Guid classId, Guid assignmentId, Guid teacherUserId, CancellationToken cancellationToken);
     Task<Result<bool>> RemoveAssignmentAsync(Guid classId, Guid assignmentId, CancellationToken cancellationToken);
 }
@@ -111,12 +114,12 @@ public class DeleteBranchCommandHandler(IClassService classes) : IRequestHandler
 
 // ---- Classes ------------------------------------------------------------------------------------------------
 
-public record ListClassesQuery(bool Mine, Guid? BranchId) : IRequest<Result<IReadOnlyList<ClassSummaryDto>>>;
+public record ListClassesQuery(bool Mine, Guid? BranchId, Guid? AcademicYearId = null) : IRequest<Result<IReadOnlyList<ClassSummaryDto>>>;
 
 public class ListClassesQueryHandler(IClassService classes) : IRequestHandler<ListClassesQuery, Result<IReadOnlyList<ClassSummaryDto>>>
 {
     public async Task<Result<IReadOnlyList<ClassSummaryDto>>> Handle(ListClassesQuery request, CancellationToken cancellationToken) =>
-        Result<IReadOnlyList<ClassSummaryDto>>.Success(await classes.ListClassesAsync(request.Mine, request.BranchId, cancellationToken));
+        Result<IReadOnlyList<ClassSummaryDto>>.Success(await classes.ListClassesAsync(request.Mine, request.BranchId, request.AcademicYearId, cancellationToken));
 }
 
 public record GetClassQuery(Guid Id) : IRequest<Result<ClassDetailDto>>;
@@ -185,7 +188,7 @@ public class RemoveClassStudentCommandHandler(IClassService classes) : IRequestH
 
 // ---- Teacher assignments ------------------------------------------------------------------------------------
 
-public record AssignTeacherCommand(Guid ClassId, int? SubjectId, string? SubjectName, Guid TeacherUserId) : IRequest<Result<TeachingAssignmentDto>>;
+public record AssignTeacherCommand(Guid ClassId, int? SubjectId, string? SubjectName, Guid TeacherUserId, int? CurriculumId = null) : IRequest<Result<TeachingAssignmentDto>>;
 
 public class AssignTeacherCommandValidator : AbstractValidator<AssignTeacherCommand>
 {
@@ -201,7 +204,7 @@ public class AssignTeacherCommandValidator : AbstractValidator<AssignTeacherComm
 public class AssignTeacherCommandHandler(IClassService classes) : IRequestHandler<AssignTeacherCommand, Result<TeachingAssignmentDto>>
 {
     public Task<Result<TeachingAssignmentDto>> Handle(AssignTeacherCommand r, CancellationToken cancellationToken) =>
-        classes.AssignTeacherAsync(r.ClassId, r.SubjectId, r.SubjectName?.Trim(), r.TeacherUserId, cancellationToken);
+        classes.AssignTeacherAsync(r.ClassId, r.SubjectId, r.SubjectName?.Trim(), r.TeacherUserId, r.CurriculumId, cancellationToken);
 }
 
 public record ChangeAssignmentTeacherCommand(Guid ClassId, Guid AssignmentId, Guid TeacherUserId) : IRequest<Result<TeachingAssignmentDto>>;

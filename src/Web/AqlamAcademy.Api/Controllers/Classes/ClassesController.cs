@@ -63,8 +63,8 @@ public class ClassesController : ControllerBase
     /// <summary>All classes, or with mine=true those the current user teaches or is homeroom teacher of.</summary>
     [HttpGet]
     [HasPermission(Permissions.MembersView)]
-    public async Task<IActionResult> List([FromQuery] bool mine, [FromQuery] Guid? branchId, CancellationToken cancellationToken) =>
-        Ok(await _mediator.Send(new ListClassesQuery(mine, branchId), cancellationToken));
+    public async Task<IActionResult> List([FromQuery] bool mine, [FromQuery] Guid? branchId, [FromQuery] Guid? yearId, CancellationToken cancellationToken) =>
+        Ok(await _mediator.Send(new ListClassesQuery(mine, branchId, yearId), cancellationToken));
 
     [HttpGet("{id:guid}")]
     [HasPermission(Permissions.MembersView)]
@@ -101,7 +101,7 @@ public class ClassesController : ControllerBase
     [HttpPost("{id:guid}/assignments")]
     [HasPermission(Permissions.ClassesManage)]
     public async Task<IActionResult> Assign(Guid id, [FromBody] AssignRequest request, CancellationToken cancellationToken) =>
-        ToActionResult(await _mediator.Send(new AssignTeacherCommand(id, request.SubjectId, request.SubjectName, request.TeacherUserId), cancellationToken));
+        ToActionResult(await _mediator.Send(new AssignTeacherCommand(id, request.SubjectId, request.SubjectName, request.TeacherUserId, request.CurriculumId), cancellationToken));
 
     [HttpPut("{id:guid}/assignments/{assignmentId:guid}")]
     [HasPermission(Permissions.ClassesManage)]
@@ -114,7 +114,7 @@ public class ClassesController : ControllerBase
         ToActionResult(await _mediator.Send(new RemoveAssignmentCommand(id, assignmentId), cancellationToken));
 
     public record AddStudentsRequest(IReadOnlyList<string> UserNames);
-    public record AssignRequest(int? SubjectId, string? SubjectName, Guid TeacherUserId);
+    public record AssignRequest(int? SubjectId, string? SubjectName, Guid TeacherUserId, int? CurriculumId = null);
     public record ChangeTeacherRequest(Guid TeacherUserId);
 
     private IActionResult ToActionResult(Application.Common.Models.Result result) =>

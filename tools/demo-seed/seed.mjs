@@ -77,6 +77,45 @@ const subjectId = (...names) => {
 };
 
 // ---- Building blocks ----------------------------------------------------------------------------------------
+/** Academic year, weighted gradebooks (typed and linked to quizzes/homework) and a published first term. Safe to re-run. */
+async function academicsDemo(owner, org) {
+  const api = `/api/orgs/${org}`;
+  if ((await owner.get(`${api}/academic-years`)).length) { log('  = academic year (exists)'); return; }
+
+  const day = offset => new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);
+  const year = await owner.post(`${api}/academic-years`, {
+    name: '1448 هـ', startDate: day(-70), endDate: day(220),
+    terms: [
+      { name: 'الفصل الدراسي الأول', startDate: day(-70), endDate: day(60) },
+      { name: 'الفصل الدراسي الثاني', startDate: day(70), endDate: day(220) },
+    ],
+  });
+  const termId = year.terms[0].id;
+
+  for (const summary of await owner.get(`${api}/classes`)) {
+    const detail = await owner.get(`${api}/classes/${summary.id}`);
+    // Arabic stays empty on purpose: a report card simply leaves out subjects with no grades.
+    for (const subject of detail.assignments.filter(a => a.courseStatus === 'Published')) {
+      const url = `${api}/classes/${summary.id}/assignments/${subject.id}/gradebook`;
+      const book = await owner.get(`${url}?termId=${termId}`);
+      const work = await owner.post(`${url}/categories`, { termId, name: 'أعمال السنة', weightPercent: 40 });
+      const midterm = await owner.post(`${url}/categories`, { termId, name: 'اختبار منتصف الفصل', weightPercent: 20 });
+      await owner.post(`${url}/categories`, { termId, name: 'الاختبار النهائي', weightPercent: 40 }); // not taken yet
+
+      for (const lesson of book.linkableLessons.slice(0, 2))
+        await owner.post(`${url}/categories/${work.id}/items`, { title: lesson.title, maxPoints: 10, sourceLessonId: lesson.lessonId });
+      const participation = await owner.post(`${url}/categories/${work.id}/items`, { title: 'المشاركة', maxPoints: 10 });
+      const exam = await owner.post(`${url}/categories/${midterm.id}/items`, { title: 'اختبار منتصف الفصل', maxPoints: 20 });
+
+      await owner.put(`${url}/items/${participation.id}/scores`, { scores: detail.students.map((s, i) => ({ userId: s.userId, score: 10 - i })) });
+      await owner.put(`${url}/items/${exam.id}/scores`, { scores: detail.students.map((s, i) => ({ userId: s.userId, score: 19 - i * 4 })) });
+    }
+    log(`  ✓ gradebook: ${summary.name}`);
+  }
+  await owner.put(`${api}/academic-years/terms/${termId}/report-cards`, { published: true });
+  log('  ✓ first term report cards published');
+}
+
 async function organization(admin, { name, slug, type, countryCode, ownerUserName }) {
   const r = await admin.req('POST', '/api/platform/organizations', { name, slug, type, countryCode, ownerUserName });
   if (r.status === 200) log(`  + ${type} ${slug}`);
@@ -253,6 +292,10 @@ async function main() {
   log('1) Saudi school: rowad-school');
   const S = 'rowad-school';
   const sOwner = await user('rowad.owner', TEACHER);
+  if (process.env.DEMO_ONLY === 'academics') { // add Phase 4 data to a database seeded earlier
+    await academicsDemo(sOwner, 'rowad-school');
+    return;
+  }
   await organization(admin, { name: 'مدارس الرواد الأهلية', slug: S, type: 'School', countryCode: 'SA', ownerUserName: 'rowad.owner' });
   await sOwner.put(`/api/orgs/${S}/settings`, { name: 'مدارس الرواد الأهلية', timeZone: 'Asia/Riyadh', calendar: 'Both', weekStartDay: 'Sunday', logoUrl: null, primaryColor: '#0E7C66' });
 
@@ -336,6 +379,8 @@ async function main() {
   const joinCode = codes.find(c => c.isActive && c.requiresApproval) ?? await sOwner.post(`/api/orgs/${S}/join-codes`, { role: 'Student', requiresApproval: true, maxUses: 100 });
   const pending = await user('s.pending', STUDENT);
   await pending.req('POST', '/api/me/join', { code: joinCode.code });
+
+  await academicsDemo(sOwner, S);
 
   // ---- 2. Egyptian center -------------------------------------------------------------------------------
   log('2) Egyptian center: tamayoz-center');

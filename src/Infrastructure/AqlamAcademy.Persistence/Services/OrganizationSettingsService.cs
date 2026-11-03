@@ -35,6 +35,7 @@ public class OrganizationSettingsService : IOrganizationSettingsService
         organization.TimeZone = command.TimeZone;
         organization.Calendar = command.Calendar;
         organization.WeekStartDay = command.WeekStartDay;
+        organization.GradingScale = command.GradingScale;
         organization.LogoUrl = string.IsNullOrWhiteSpace(command.LogoUrl) ? null : command.LogoUrl;
         organization.PrimaryColor = string.IsNullOrWhiteSpace(command.PrimaryColor) ? null : command.PrimaryColor.ToUpperInvariant();
         organization.LastModifiedAtUtc = DateTime.UtcNow;
@@ -44,5 +45,5 @@ public class OrganizationSettingsService : IOrganizationSettingsService
     }
 
     private static OrganizationSettingsDto ToDto(Organization o) => new(
-        o.Name, o.Slug, o.Type.ToString(), o.CountryCode, o.Currency, o.TimeZone, o.Calendar.ToString(), o.WeekStartDay, o.LogoUrl, o.PrimaryColor);
+        o.Name, o.Slug, o.Type.ToString(), o.CountryCode, o.Currency, o.TimeZone, o.Calendar.ToString(), o.WeekStartDay, o.LogoUrl, o.PrimaryColor, o.GradingScale.ToString());
 }

@@ -35,7 +35,7 @@ public static class CourseLifecycle
 
         if (string.IsNullOrWhiteSpace(course.Title))
             issues.Add("Add a course title.");
-        if (course.CurriculumId is null || course.StageId is null || course.GradeId is null || course.SubjectId is null)
+        if (course.CurriculumId is null || course.StageId is null || course.GradeId is null || (course.SubjectId is null && string.IsNullOrWhiteSpace(course.CustomSubjectName)))
             issues.Add("Choose the curriculum, stage, grade and subject.");
 
         if (course.PricingType is null)
