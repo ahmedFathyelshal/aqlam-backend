@@ -42,3 +42,12 @@ homework; Arabic stays a draft (the teacher's to-do). Attendance covers the last
 few absences, lates and excused days, so parents already have alerts.
 
 Names show as usernames because self-registration does not ask for a full name.
+
+## Academic year and grades
+
+The school gets the year 1448 هـ with two terms, weighted gradebooks in math and science (scores typed and linked to
+quizzes and homework) and published report cards for the first term. To add only this to a database seeded earlier:
+
+```
+DEMO_ONLY=academics node tools/demo-seed/seed.mjs
+```

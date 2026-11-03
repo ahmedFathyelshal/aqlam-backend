@@ -76,6 +76,10 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationPolicyReader, OrganizationPolicyReader>();
         services.AddScoped<LearnerAccess>();
         services.AddScoped<ClassEnrollmentSync>();
+        services.AddScoped<GradeReader>();
+        services.AddScoped<AqlamAcademy.Application.Features.Academics.IAcademicYearService, AcademicYearService>();
+        services.AddScoped<AqlamAcademy.Application.Features.Academics.IGradebookService, GradebookService>();
+        services.AddScoped<AqlamAcademy.Application.Features.Academics.IReportCardService, ReportCardService>();
         services.AddScoped<AqlamAcademy.Application.Features.Communication.INotifier, Notifier>();
         services.AddScoped<AqlamAcademy.Application.Features.Communication.INotificationInbox, NotificationInbox>();
         services.AddScoped<AqlamAcademy.Application.Features.Communication.IAnnouncementService, AnnouncementService>();

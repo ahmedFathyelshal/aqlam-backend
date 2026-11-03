@@ -41,6 +41,11 @@ public class TenantDbContext : MultiTenantDbContext
     public DbSet<AqlamAcademy.Domain.Attendance.AttendanceSession> AttendanceSessions => Set<AqlamAcademy.Domain.Attendance.AttendanceSession>();
     public DbSet<AqlamAcademy.Domain.Attendance.AttendanceRecord> AttendanceRecords => Set<AqlamAcademy.Domain.Attendance.AttendanceRecord>();
     public DbSet<AqlamAcademy.Domain.Communication.Announcement> Announcements => Set<AqlamAcademy.Domain.Communication.Announcement>();
+    public DbSet<AqlamAcademy.Domain.Academics.AcademicYear> AcademicYears => Set<AqlamAcademy.Domain.Academics.AcademicYear>();
+    public DbSet<AqlamAcademy.Domain.Academics.AcademicTerm> AcademicTerms => Set<AqlamAcademy.Domain.Academics.AcademicTerm>();
+    public DbSet<AqlamAcademy.Domain.Academics.GradeCategory> GradeCategories => Set<AqlamAcademy.Domain.Academics.GradeCategory>();
+    public DbSet<AqlamAcademy.Domain.Academics.GradeItem> GradeItems => Set<AqlamAcademy.Domain.Academics.GradeItem>();
+    public DbSet<AqlamAcademy.Domain.Academics.GradeEntry> GradeEntries => Set<AqlamAcademy.Domain.Academics.GradeEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

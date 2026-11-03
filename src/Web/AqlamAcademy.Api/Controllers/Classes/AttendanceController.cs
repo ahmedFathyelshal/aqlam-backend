@@ -35,6 +35,15 @@ public class AttendanceController : ControllerBase
     public async Task<IActionResult> Summary(Guid classId, [FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken) =>
         ToActionResult(await _mediator.Send(new GetAttendanceSummaryQuery(classId, from, to), cancellationToken));
 
+    [HttpGet("export")]
+    public async Task<IActionResult> Export(Guid classId, [FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new ExportAttendanceQuery(classId, from, to), cancellationToken);
+        return result.Succeeded
+            ? File(result.Data!.Content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", result.Data.FileName)
+            : this.ToFailureResult(result);
+    }
+
     public record SaveAttendanceRequest(DateOnly Date, TimeOnly? StartTime, IReadOnlyList<AttendanceMark>? Marks);
 
     private IActionResult ToActionResult(Application.Common.Models.Result result) =>

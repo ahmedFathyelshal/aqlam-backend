@@ -25,6 +25,7 @@ public class Organization : BaseEntity
     public CalendarDisplay Calendar { get; set; } = CalendarDisplay.Both;
     /// <summary>First day of the school week (Sunday in Saudi Arabia and most Egyptian schools).</summary>
     public DayOfWeek WeekStartDay { get; set; } = DayOfWeek.Sunday;
+    public Academics.GradingScale GradingScale { get; set; } = Academics.GradingScale.Descriptive;
 
     // Branding
     public string? LogoUrl { get; set; }

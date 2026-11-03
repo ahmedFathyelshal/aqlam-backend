@@ -4,6 +4,7 @@ using AqlamAcademy.Application.Features.Attendance;
 using AqlamAcademy.Application.Features.Communication;
 using AqlamAcademy.Domain.Attendance;
 using AqlamAcademy.Domain.Communication;
+using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 
 namespace AqlamAcademy.Infrastructure.Persistence.Services;
@@ -29,6 +30,66 @@ public class AttendanceService : IAttendanceService
         _currentOrganization = currentOrganization;
         _notifier = notifier;
     }
+
+    public async Task<Result<AttendanceExportFile>> ExportAsync(Guid classId, DateOnly from, DateOnly to, CancellationToken cancellationToken)
+    {
+        var className = await _tenant.ClassGroups.AsNoTracking().Where(c => c.Id == classId).Select(c => c.Name).FirstOrDefaultAsync(cancellationToken);
+        if (className is null)
+            return Result<AttendanceExportFile>.NotFound("Class not found.");
+
+        var sessions = await _tenant.AttendanceSessions.AsNoTracking().Include(s => s.Records)
+            .Where(s => s.ClassGroupId == classId && s.Date >= from && s.Date <= to)
+            .OrderBy(s => s.Date).ThenBy(s => s.StartTime)
+            .ToListAsync(cancellationToken);
+        // Current roster first, then anyone who has since left the class but still has marks in this period.
+        var rosterIds = await _tenant.ClassStudents.AsNoTracking().Where(s => s.ClassGroupId == classId).Select(s => s.UserId).ToListAsync(cancellationToken);
+        var studentIds = rosterIds.Union(sessions.SelectMany(s => s.Records).Select(r => r.UserId)).ToList();
+        var students = (await _platform.Users.AsNoTracking().Where(u => studentIds.Contains(u.Id)).ToListAsync(cancellationToken))
+            .OrderBy(u => u.DisplayName).ToList();
+
+        using var workbook = new XLWorkbook();
+        var sheet = workbook.Worksheets.Add("Attendance");
+        sheet.RightToLeft = true;
+        sheet.Cell(1, 1).Value = "اسم المستخدم";
+        sheet.Cell(1, 2).Value = "الطالب";
+        for (var i = 0; i < sessions.Count; i++)
+        {
+            var session = sessions[i];
+            sheet.Cell(1, i + 3).Value = session.StartTime is { } time ? $"{session.Date:yyyy-MM-dd} {time:HH:mm}" : session.Date.ToString("yyyy-MM-dd");
+        }
+        var totalsColumn = sessions.Count + 3;
+        string[] totals = ["حاضر", "غائب", "متأخر", "بعذر"];
+        for (var i = 0; i < totals.Length; i++)
+            sheet.Cell(1, totalsColumn + i).Value = totals[i];
+        sheet.Row(1).Style.Font.Bold = true;
+
+        for (var row = 0; row < students.Count; row++)
+        {
+            var student = students[row];
+            sheet.Cell(row + 2, 1).Value = student.UserName;
+            sheet.Cell(row + 2, 2).Value = student.DisplayName;
+            var marks = sessions.Select(s => s.Records.FirstOrDefault(r => r.UserId == student.Id)?.Status).ToList();
+            for (var i = 0; i < marks.Count; i++)
+                if (marks[i] is { } status)
+                    sheet.Cell(row + 2, i + 3).Value = StatusText(status);
+            AttendanceStatus[] statuses = [AttendanceStatus.Present, AttendanceStatus.Absent, AttendanceStatus.Late, AttendanceStatus.Excused];
+            for (var i = 0; i < statuses.Length; i++)
+                sheet.Cell(row + 2, totalsColumn + i).Value = marks.Count(m => m == statuses[i]);
+        }
+        sheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return Result<AttendanceExportFile>.Success(new AttendanceExportFile(stream.ToArray(), $"attendance-{className}-{from:yyyy-MM-dd}-{to:yyyy-MM-dd}.xlsx"));
+    }
+
+    private static string StatusText(AttendanceStatus status) => status switch
+    {
+        AttendanceStatus.Present => "حاضر",
+        AttendanceStatus.Absent => "غائب",
+        AttendanceStatus.Late => "متأخر",
+        _ => "بعذر"
+    };
 
     public async Task<Result<AttendanceSheetDto>> GetSheetAsync(Guid classId, DateOnly date, TimeOnly? startTime, CancellationToken cancellationToken)
     {

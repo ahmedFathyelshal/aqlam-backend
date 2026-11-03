@@ -41,6 +41,8 @@ public class Course : BaseEntity
     public int? StageId { get; set; }
     public int? GradeId { get; set; }
     public int? SubjectId { get; set; }
+    /// <summary>A school's own subject that is not in the lookup list.</summary>
+    public string? CustomSubjectName { get; set; }
 
     // Child entities
     public ICollection<CourseChapter> Chapters { get; set; } = new List<CourseChapter>();

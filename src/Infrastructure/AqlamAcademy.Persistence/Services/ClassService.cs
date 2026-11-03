@@ -80,11 +80,13 @@ public class ClassService : IClassService
 
     // ---- Classes --------------------------------------------------------------------------------------------
 
-    public async Task<IReadOnlyList<ClassSummaryDto>> ListClassesAsync(bool mine, Guid? branchId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ClassSummaryDto>> ListClassesAsync(bool mine, Guid? branchId, Guid? academicYearId, CancellationToken cancellationToken)
     {
         var query = _tenant.ClassGroups.AsNoTracking().Include(c => c.Branch).AsQueryable();
         if (branchId is not null)
             query = query.Where(c => c.BranchId == branchId);
+        if (academicYearId is not null)
+            query = query.Where(c => c.AcademicYearId == academicYearId);
         if (mine)
         {
             var me = _currentUser.UserId;
@@ -158,6 +160,9 @@ public class ClassService : IClassService
         if (input.HomeroomTeacherUserId is { } homeroom && !await HasActiveRoleAsync(homeroom, OrganizationRole.Teacher, cancellationToken))
             errors.Add("The homeroom teacher must be an active teacher of this organization.");
 
+        if (input.AcademicYearId is { } yearId && !await _tenant.AcademicYears.AnyAsync(y => y.Id == yearId, cancellationToken))
+            errors.Add("The selected academic year does not exist.");
+
         if (input.CurriculumId is { } curriculumId && !await _platform.Curricula.AnyAsync(c => c.Id == curriculumId, cancellationToken))
             errors.Add("The selected curriculum does not exist.");
         if (input.GradeId is { } gradeId && !await _platform.EducationGrades.AnyAsync(g => g.Id == gradeId, cancellationToken))
@@ -187,6 +192,10 @@ public class ClassService : IClassService
         classGroup.Kind = input.Kind;
         classGroup.Gender = input.Gender;
         classGroup.BranchId = input.BranchId;
+        // New classes join the current year unless another one is chosen.
+        classGroup.AcademicYearId = input.AcademicYearId ?? (id is null
+            ? await _tenant.AcademicYears.Where(y => y.IsCurrent).Select(y => (Guid?)y.Id).FirstOrDefaultAsync(cancellationToken)
+            : classGroup.AcademicYearId);
         classGroup.Branch = branch;
         classGroup.CurriculumId = input.CurriculumId;
         classGroup.GradeId = input.GradeId;
@@ -210,6 +219,8 @@ public class ClassService : IClassService
             return Result<bool>.NotFound("Class not found.");
         if (classGroup.Students.Count > 0)
             return Result<bool>.Conflict("Remove the students from the class first.");
+        if (await HasGradesAsync(classGroup.Assignments.Select(a => a.Id).ToList(), cancellationToken))
+            return Result<bool>.Conflict("This class already has grades in the gradebook.");
 
         // Subject courses are kept (they may hold content worth copying); only the links go.
         _tenant.TeachingAssignments.RemoveRange(classGroup.Assignments);
@@ -295,7 +306,7 @@ public class ClassService : IClassService
 
     // ---- Teacher assignments --------------------------------------------------------------------------------
 
-    public async Task<Result<TeachingAssignmentDto>> AssignTeacherAsync(Guid classId, int? subjectId, string? subjectName, Guid teacherUserId, CancellationToken cancellationToken)
+    public async Task<Result<TeachingAssignmentDto>> AssignTeacherAsync(Guid classId, int? subjectId, string? subjectName, Guid teacherUserId, int? curriculumId, CancellationToken cancellationToken)
     {
         var classGroup = await _tenant.ClassGroups.AsNoTracking().FirstOrDefaultAsync(c => c.Id == classId, cancellationToken);
         if (classGroup is null)
@@ -315,9 +326,14 @@ public class ClassService : IClassService
         if (await _tenant.TeachingAssignments.AnyAsync(a => a.ClassGroupId == classId && a.SubjectName.ToLower() == subjectName!.ToLower(), cancellationToken))
             return Result<TeachingAssignmentDto>.Conflict($"{subjectName} already has a teacher in this class. Change the teacher instead.");
 
+        if (curriculumId is { } chosen && !await _platform.Curricula.AnyAsync(c => c.Id == chosen, cancellationToken))
+            return Result<TeachingAssignmentDto>.Failure(["The selected curriculum does not exist."]);
+        // A subject on another curriculum than the class has no matching stage/grade yet: the teacher picks them.
+        var mixedCurriculum = curriculumId is not null && curriculumId != classGroup.CurriculumId;
+
         // The subject space: a private course for this class, ready for the teacher to fill and publish.
         // Classification comes from the class (stage derived from its grade) so the publish checklist only asks for content.
-        int? stageId = classGroup.GradeId is { } gradeId
+        int? stageId = !mixedCurriculum && classGroup.GradeId is { } gradeId
             ? await _platform.EducationGrades.Where(g => g.Id == gradeId).Select(g => (int?)g.EducationStageId).FirstOrDefaultAsync(cancellationToken)
             : null;
         var course = new Course
@@ -328,10 +344,11 @@ public class ClassService : IClassService
             Visibility = CourseVisibility.Private,
             PricingType = PricingType.Free,
             AccessExpiryPolicy = AccessExpiryPolicy.Unlimited,
-            CurriculumId = classGroup.CurriculumId,
+            CurriculumId = curriculumId ?? classGroup.CurriculumId,
             StageId = stageId,
-            GradeId = classGroup.GradeId,
+            GradeId = mixedCurriculum ? null : classGroup.GradeId,
             SubjectId = subjectId,
+            CustomSubjectName = subjectId is null ? subjectName : null,
             CreatedByUserId = teacherUserId
         };
         var assignment = new TeachingAssignment
@@ -339,6 +356,7 @@ public class ClassService : IClassService
             ClassGroupId = classId,
             SubjectId = subjectId,
             SubjectName = subjectName!,
+            CurriculumId = curriculumId,
             TeacherUserId = teacherUserId,
             CourseId = course.Id
         };
@@ -371,6 +389,8 @@ public class ClassService : IClassService
         var assignment = await _tenant.TeachingAssignments.FirstOrDefaultAsync(a => a.Id == assignmentId && a.ClassGroupId == classId, cancellationToken);
         if (assignment is null)
             return Result<bool>.NotFound("Assignment not found.");
+        if (await HasGradesAsync([assignment.Id], cancellationToken))
+            return Result<bool>.Conflict("This subject already has grades in the gradebook.");
 
         _tenant.TeachingAssignments.Remove(assignment);
         await _tenant.SaveChangesAsync(cancellationToken);
@@ -381,6 +401,9 @@ public class ClassService : IClassService
     }
 
     // ---- helpers --------------------------------------------------------------------------------------------
+
+    private Task<bool> HasGradesAsync(List<Guid> assignmentIds, CancellationToken cancellationToken) =>
+        _tenant.GradeItems.AnyAsync(i => _tenant.GradeCategories.Any(c => c.Id == i.CategoryId && assignmentIds.Contains(c.TeachingAssignmentId)), cancellationToken);
 
     private sealed record Person(string UserName, string FullName, Gender? Gender);
 
@@ -404,11 +427,12 @@ public class ClassService : IClassService
         c.HomeroomTeacherUserId,
         c.HomeroomTeacherUserId is { } h ? names.GetValueOrDefault(h) : null,
         c.Capacity, studentCount,
-        c.Schedule.Select(s => new WeeklySlotDto(s.Day, s.StartTime, s.EndTime)).ToList());
+        c.Schedule.Select(s => new WeeklySlotDto(s.Day, s.StartTime, s.EndTime)).ToList(),
+        c.AcademicYearId);
 
     private static TeachingAssignmentDto ToDto(TeachingAssignment a, IReadOnlyDictionary<Guid, Person> people, string? courseStatus)
     {
         people.TryGetValue(a.TeacherUserId, out var teacher);
-        return new(a.Id, a.SubjectId, a.SubjectName, a.TeacherUserId, teacher?.UserName, teacher?.FullName, a.CourseId, courseStatus);
+        return new(a.Id, a.SubjectId, a.SubjectName, a.TeacherUserId, teacher?.UserName, teacher?.FullName, a.CourseId, courseStatus, a.CurriculumId);
     }
 }

@@ -15,7 +15,8 @@ public record OrganizationSettingsDto(
     string Calendar,
     DayOfWeek WeekStartDay,
     string? LogoUrl,
-    string? PrimaryColor);
+    string? PrimaryColor,
+    string GradingScale = "Descriptive");
 
 public interface IOrganizationSettingsService
 {
@@ -38,7 +39,8 @@ public record UpdateOrganizationSettingsCommand(
     CalendarDisplay Calendar,
     DayOfWeek WeekStartDay,
     string? LogoUrl,
-    string? PrimaryColor) : IRequest<Result<OrganizationSettingsDto>>;
+    string? PrimaryColor,
+    AqlamAcademy.Domain.Academics.GradingScale GradingScale = AqlamAcademy.Domain.Academics.GradingScale.Descriptive) : IRequest<Result<OrganizationSettingsDto>>;
 
 public class UpdateOrganizationSettingsCommandValidator : AbstractValidator<UpdateOrganizationSettingsCommand>
 {
@@ -49,6 +51,7 @@ public class UpdateOrganizationSettingsCommandValidator : AbstractValidator<Upda
             .WithMessage("Unknown time zone. Use an IANA name such as Asia/Riyadh or Africa/Cairo.");
         RuleFor(x => x.Calendar).IsInEnum();
         RuleFor(x => x.WeekStartDay).IsInEnum();
+        RuleFor(x => x.GradingScale).IsInEnum();
         RuleFor(x => x.LogoUrl)
             .Must(url => Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps)
             .When(x => !string.IsNullOrEmpty(x.LogoUrl)).WithMessage("The logo must be an https URL.");

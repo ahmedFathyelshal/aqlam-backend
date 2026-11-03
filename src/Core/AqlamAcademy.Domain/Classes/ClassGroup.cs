@@ -52,6 +52,9 @@ public class ClassGroup : BaseEntity
     public Guid? BranchId { get; set; }
     public Branch? Branch { get; set; }
 
+    /// <summary>Null for classes created before academic years existed, and for centers that do not use them.</summary>
+    public Guid? AcademicYearId { get; set; }
+
     // Platform lookup ids (no cross-store foreign keys)
     public int? CurriculumId { get; set; }
     public int? GradeId { get; set; }
@@ -92,6 +95,9 @@ public class TeachingAssignment
     /// <summary>Platform subject lookup, or null for a custom subject (name only).</summary>
     public int? SubjectId { get; set; }
     public string SubjectName { get; set; } = string.Empty;
+
+    /// <summary>Set when this subject follows another curriculum than the class (e.g. IGCSE with national Arabic).</summary>
+    public int? CurriculumId { get; set; }
 
     public Guid TeacherUserId { get; set; }
     public Guid CourseId { get; set; }
