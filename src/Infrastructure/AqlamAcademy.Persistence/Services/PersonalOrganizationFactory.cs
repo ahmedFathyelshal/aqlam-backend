@@ -32,6 +32,7 @@ public class PersonalOrganizationFactory
             CountryCode = _cell.DefaultCountryCode,
             Currency = _cell.DefaultCurrency,
             TimeZone = _cell.DefaultTimeZone,
+            Calendar = Organization.DefaultCalendarFor(_cell.DefaultCountryCode),
             PublicPublishing = PublicPublishingPolicy.Allowed
         };
 

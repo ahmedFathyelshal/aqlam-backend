@@ -55,6 +55,7 @@ public class OrganizationAdminService : IOrganizationAdminService
             CountryCode = countryCode,
             Currency = currency,
             TimeZone = timeZone,
+            Calendar = Organization.DefaultCalendarFor(countryCode),
             // Schools are private by default; centers sell to the public like independent teachers.
             PublicPublishing = type == OrganizationType.School ? PublicPublishingPolicy.Disabled : PublicPublishingPolicy.Allowed,
             IsolationTier = isolationTier

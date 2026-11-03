@@ -7,7 +7,8 @@ public enum EnrollmentSource
     FreeEnrollment = 1,
     Manual = 2,          // added by the organization's staff
     ActivationCode = 3,
-    Purchase = 4
+    Purchase = 4,
+    ClassRoster = 5     // through a class/group the student belongs to
 }
 
 public enum EnrollmentStatus

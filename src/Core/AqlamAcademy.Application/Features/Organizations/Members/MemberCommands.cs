@@ -84,6 +84,18 @@ public class UpdateMemberRolesCommandHandler(IOrganizationMembersService members
             : Task.FromResult(Result<MemberDto>.NotFound("Organization not found."));
 }
 
+/// <summary>Records a member's gender (needed for boys' and girls' classes); null clears it.</summary>
+public record SetMemberGenderCommand(Guid UserId, AqlamAcademy.Domain.Classes.Gender? Gender) : IRequest<Result<MemberDto>>;
+
+public class SetMemberGenderCommandHandler(IOrganizationMembersService members, ICurrentOrganization organization)
+    : IRequestHandler<SetMemberGenderCommand, Result<MemberDto>>
+{
+    public Task<Result<MemberDto>> Handle(SetMemberGenderCommand request, CancellationToken cancellationToken) =>
+        organization.OrganizationId is { } orgId
+            ? members.SetGenderAsync(orgId, request.UserId, request.Gender, cancellationToken)
+            : Task.FromResult(Result<MemberDto>.NotFound("Organization not found."));
+}
+
 public record ApproveMemberCommand(Guid UserId) : IRequest<Result<MemberDto>>;
 
 public class ApproveMemberCommandHandler(IOrganizationMembersService members, ICurrentOrganization organization)

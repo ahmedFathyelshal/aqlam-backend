@@ -19,7 +19,7 @@ public class MemberImportTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var workbook = new XLWorkbook(await response.Content.ReadAsStreamAsync());
         var headers = workbook.Worksheet("Members").Row(1).CellsUsed().Select(c => c.GetString()).ToList();
-        Assert.Equal(["FullName", "Role", "Phone", "Email"], headers);
+        Assert.Equal(["FullName", "Role", "Phone", "Email", "Gender"], headers);
     }
 
     [Fact]
@@ -27,11 +27,11 @@ public class MemberImportTests(ApiFactory factory)
     {
         var (owner, org) = await CreateSchoolAsync();
         var file = BuildWorkbook(
-            ["FullName", "Role", "Phone", "Email"],
-            ["Sara Al-Qahtani", "Student", "0551234567", ""],
-            ["Omar Hassan", "Teacher", "", "omar@school.test"],
-            ["Bad Role Person", "Principal", "", ""],
-            ["Sara Al-Qahtani", "Student", "0551234567", ""]); // duplicate of row 2 in the same file
+            ["FullName", "Role", "Phone", "Email", "Gender"],
+            ["Sara Al-Qahtani", "Student", "0551234567", "", "أنثى"],
+            ["Omar Hassan", "Teacher", "", "omar@school.test", "Male"],
+            ["Bad Role Person", "Principal", "", "", "Unknown"],
+            ["Sara Al-Qahtani", "Student", "0551234567", "", ""]); // duplicate of row 2 in the same file
 
         var response = await UploadAsync(owner, $"/api/orgs/{org}/members/import", file);
 
@@ -44,6 +44,7 @@ public class MemberImportTests(ApiFactory factory)
         Assert.Equal("Created", rows[0].GetProperty("status").GetString());
         Assert.Equal("Failed", rows[2].GetProperty("status").GetString());
         Assert.Contains("Principal", rows[2].GetProperty("errors")[0].GetString());
+        Assert.Contains("Gender", rows[2].GetProperty("errors")[1].GetString());
         Assert.Contains("duplicate", rows[3].GetProperty("errors")[0].GetString(), StringComparison.OrdinalIgnoreCase);
 
         // The imported student signs in with the temporary password and must change it.
@@ -62,6 +63,7 @@ public class MemberImportTests(ApiFactory factory)
         var imported = members.EnumerateArray().Single(m => m.GetProperty("userName").GetString() == userName);
         Assert.Equal("BulkImport", imported.GetProperty("source").GetString());
         Assert.Equal("Student", imported.GetProperty("roles")[0].GetString());
+        Assert.Equal("Female", imported.GetProperty("gender").GetString()); // Arabic value accepted
     }
 
     [Fact]

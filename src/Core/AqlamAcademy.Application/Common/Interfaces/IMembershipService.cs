@@ -8,7 +8,10 @@ public record MembershipSummaryDto(
     string Name,
     string Type,
     string CountryCode,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    string TimeZone = "Asia/Riyadh",
+    string Calendar = "Both",
+    DayOfWeek WeekStartDay = DayOfWeek.Sunday);
 
 public interface IMembershipService
 {

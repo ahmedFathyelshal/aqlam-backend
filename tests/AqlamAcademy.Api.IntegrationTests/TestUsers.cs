@@ -7,6 +7,7 @@ public static class TestUsers
 {
     public const int Student = 1;
     public const int Teacher = 2;
+    public const int Parent = 4;
     public const string Password = "Passw0rd!x";
 
     /// <summary>Registers a unique user and logs the client in (auth cookies are kept by the client).</summary>
