@@ -24,6 +24,11 @@ public class LearnController : ControllerBase
         _mediator = mediator;
     }
 
+    /// <summary>The signed-in student's next lessons, work due and latest result in this organization.</summary>
+    [HttpGet("home")]
+    public async Task<IActionResult> Home(CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new GetLearnerHomeQuery(), cancellationToken));
+
     [HttpGet("courses/{courseId:guid}")]
     public async Task<IActionResult> Course(Guid courseId, CancellationToken cancellationToken) =>
         ToActionResult(await _mediator.Send(new GetLearnerCourseQuery(courseId), cancellationToken));

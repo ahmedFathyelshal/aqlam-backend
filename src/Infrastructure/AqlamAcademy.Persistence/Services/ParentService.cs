@@ -20,6 +20,8 @@ public class ParentService : IParentService
     private const string CodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private const int CodeLength = 8;
     private static readonly TimeSpan InviteLifetime = TimeSpan.FromDays(14);
+    private const int AttendanceDaysShown = 20;
+    private const int AttendanceDaysLookBack = 60;
 
     private readonly ApplicationDbContext _platform;
     private readonly TenantDbContext _tenant;
@@ -200,15 +202,40 @@ public class ParentService : IParentService
             .ToListAsync(cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var history = await _attendance.HistoryOfAsync(childUserId, today.AddDays(-30), today.AddDays(1), cancellationToken);
+        // 20 school days can reach further back than the 30 days the totals cover (holidays).
+        var longHistory = await _attendance.HistoryOfAsync(childUserId, today.AddDays(-AttendanceDaysLookBack), today.AddDays(1), cancellationToken);
+        var history = longHistory.Where(h => h.Date >= today.AddDays(-30)).ToList();
         int Count(AttendanceStatus status) => history.Count(h => h.Status == status.ToString());
         var attendance = new ChildAttendanceDto(Count(AttendanceStatus.Present), Count(AttendanceStatus.Absent), Count(AttendanceStatus.Late),
-            Count(AttendanceStatus.Excused), history.Take(10).ToList());
+            Count(AttendanceStatus.Excused), history.Take(10).ToList(), SchoolDays(longHistory));
 
-        return Result<ChildOverviewDto>.Success(new ChildOverviewDto(childUserId, fullName, classes, courses, attendance, await GradesAsync(childUserId, cancellationToken)));
+        var school = await _platform.Organizations.AsNoTracking().Where(o => o.Id == orgId)
+            .Select(o => new ChildSchoolDto(o.Name, o.LogoUrl, o.ContactPhone, o.ContactEmail))
+            .FirstAsync(cancellationToken);
+
+        return Result<ChildOverviewDto>.Success(new ChildOverviewDto(childUserId, fullName, classes, courses, attendance, await GradesAsync(childUserId, cancellationToken), school));
     }
 
     // ---- helpers --------------------------------------------------------------------------------------------
+
+    /// <summary>The latest school days, oldest first, each with its most serious status.</summary>
+    private static List<ChildAttendanceDayDto> SchoolDays(IEnumerable<AttendanceEntryDto> history)
+    {
+        static int Severity(string status) => status switch
+        {
+            nameof(AttendanceStatus.Absent) => 3,
+            nameof(AttendanceStatus.Late) => 2,
+            nameof(AttendanceStatus.Excused) => 1,
+            _ => 0
+        };
+
+        return history.GroupBy(h => h.Date)
+            .OrderByDescending(day => day.Key)
+            .Take(AttendanceDaysShown)
+            .Select(day => new ChildAttendanceDayDto(day.Key, day.MaxBy(h => Severity(h.Status))!.Status))
+            .OrderBy(day => day.Date)
+            .ToList();
+    }
 
     /// <summary>Latest results: submitted quiz attempts and graded / returned assignments.</summary>
     private async Task<IReadOnlyList<ChildGradeDto>> GradesAsync(Guid childUserId, CancellationToken cancellationToken)

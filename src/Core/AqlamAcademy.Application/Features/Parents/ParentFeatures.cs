@@ -17,7 +17,12 @@ public record ChildCourseDto(Guid CourseId, string Title, int ProgressPercent, D
 
 public record ChildGradeDto(string Kind, Guid CourseId, string? LessonTitle, decimal? Score, decimal MaxScore, decimal? Percent, string Status, DateTime AtUtc);
 
-public record ChildAttendanceDto(int Present, int Absent, int Late, int Excused, IReadOnlyList<AttendanceEntryDto> Recent);
+/// <summary>One school day; a day with several sessions shows its most serious status.</summary>
+public record ChildAttendanceDayDto(DateOnly Date, string Status);
+
+public record ChildAttendanceDto(int Present, int Absent, int Late, int Excused, IReadOnlyList<AttendanceEntryDto> Recent, IReadOnlyList<ChildAttendanceDayDto> Days);
+
+public record ChildSchoolDto(string Name, string? LogoUrl, string? ContactPhone, string? ContactEmail);
 
 /// <summary>Read-only view of one child inside one organization.</summary>
 public record ChildOverviewDto(
@@ -26,7 +31,8 @@ public record ChildOverviewDto(
     IReadOnlyList<string> Classes,
     IReadOnlyList<ChildCourseDto> Courses,
     ChildAttendanceDto Attendance,
-    IReadOnlyList<ChildGradeDto> Grades);
+    IReadOnlyList<ChildGradeDto> Grades,
+    ChildSchoolDto School);
 
 public interface IParentService
 {

@@ -65,6 +65,18 @@ public record MyCourseDto(
     DateTime? ExpiresAtUtc,
     bool IsExpired);
 
+/// <summary>The next lesson the student can open in a course.</summary>
+public record NextLessonDto(Guid CourseId, Guid LessonId, string Title, string ChapterTitle, string Type, int? DurationInMinutes);
+
+/// <summary>Work with a due date that the student still has to hand in.</summary>
+public record DueItemDto(Guid CourseId, string CourseTitle, Guid LessonId, string Title, DateTime DueAtUtc, bool IsOverdue);
+
+/// <summary>The student's most recent marked quiz or assignment.</summary>
+public record LatestResultDto(string Kind, Guid CourseId, string CourseTitle, Guid LessonId, string Title, decimal Percent, DateTime AtUtc);
+
+/// <summary>What a student's home page needs from one organization.</summary>
+public record LearnerHomeDto(IReadOnlyList<NextLessonDto> NextLessons, IReadOnlyList<DueItemDto> Due, LatestResultDto? LatestResult);
+
 public record EnrollmentDto(
     Guid UserId,
     string UserName,
@@ -80,6 +92,7 @@ public record EnrollMemberResultDto(string UserName, string Status, string? Erro
 public interface ILearningService
 {
     Task<Result<LearnerCourseDto>> GetCourseAsync(Guid courseId, CancellationToken cancellationToken);
+    Task<Result<LearnerHomeDto>> GetHomeAsync(CancellationToken cancellationToken);
     Task<Result<LessonContentDto>> GetLessonAsync(Guid lessonId, CancellationToken cancellationToken);
     Task<Result<ProgressResultDto>> RecordProgressAsync(Guid lessonId, int? positionSeconds, int? watchedPercent, bool markCompleted, CancellationToken cancellationToken);
 

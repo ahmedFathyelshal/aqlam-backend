@@ -420,6 +420,14 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<int>("Calendar")
                         .HasColumnType("integer");
 
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ContactPhone")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<string>("CountryCode")
                         .IsRequired()
                         .HasMaxLength(2)

@@ -89,6 +89,27 @@ public class SchoolOperationsTests(ApiFactory factory)
         var overview = await GetDataAsync(parent.Client, $"{school.Api}/children/{child.UserId}");
         Assert.Equal("7-A", overview.GetProperty("classes")[0].GetString());
         Assert.Equal(1, overview.GetProperty("attendance").GetProperty("late").GetInt32());
+        var day = Assert.Single(overview.GetProperty("attendance").GetProperty("days").EnumerateArray());
+        Assert.Equal("Late", day.GetProperty("status").GetString());
+        Assert.Equal(JsonValueKind.Null, overview.GetProperty("school").GetProperty("contactPhone").ValueKind);
+
+        // The school's contact details reach its parents; bad values are refused.
+        var settings = await GetDataAsync(school.Owner, $"{school.Api}/settings");
+        object Contact(string phone, string email) => new
+        {
+            name = settings.GetProperty("name").GetString(),
+            timeZone = settings.GetProperty("timeZone").GetString(),
+            calendar = settings.GetProperty("calendar").GetString(),
+            weekStartDay = settings.GetProperty("weekStartDay").GetString(),
+            contactPhone = phone,
+            contactEmail = email
+        };
+        Assert.Equal(HttpStatusCode.BadRequest, (await school.Owner.PutAsJsonAsync($"{school.Api}/settings", Contact("call us", "office@school.example"))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await school.Owner.PutAsJsonAsync($"{school.Api}/settings", Contact("+966 11 000 0000", "not-an-email"))).StatusCode);
+        (await school.Owner.PutAsJsonAsync($"{school.Api}/settings", Contact("+966 11 000 0000", "office@school.example"))).EnsureSuccessStatusCode();
+        var contact = (await GetDataAsync(parent.Client, $"{school.Api}/children/{child.UserId}")).GetProperty("school");
+        Assert.Equal("+966 11 000 0000", contact.GetProperty("contactPhone").GetString());
+        Assert.Equal("office@school.example", contact.GetProperty("contactEmail").GetString());
 
         // Read-only: the Parent role grants nothing else.
         Assert.Equal(HttpStatusCode.Forbidden, (await parent.Client.GetAsync($"{school.Api}/classes")).StatusCode);

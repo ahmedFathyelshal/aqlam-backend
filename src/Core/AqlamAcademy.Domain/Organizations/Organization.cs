@@ -31,6 +31,10 @@ public class Organization : BaseEntity
     public string? LogoUrl { get; set; }
     public string? PrimaryColor { get; set; }
 
+    // Contact details shown to the organization's parents
+    public string? ContactPhone { get; set; }
+    public string? ContactEmail { get; set; }
+
     // Policies
     public PublicPublishingPolicy PublicPublishing { get; set; } = PublicPublishingPolicy.Allowed;
 

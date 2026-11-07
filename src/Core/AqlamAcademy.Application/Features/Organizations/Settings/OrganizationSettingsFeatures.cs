@@ -16,7 +16,9 @@ public record OrganizationSettingsDto(
     DayOfWeek WeekStartDay,
     string? LogoUrl,
     string? PrimaryColor,
-    string GradingScale = "Descriptive");
+    string GradingScale = "Descriptive",
+    string? ContactPhone = null,
+    string? ContactEmail = null);
 
 public interface IOrganizationSettingsService
 {
@@ -40,7 +42,9 @@ public record UpdateOrganizationSettingsCommand(
     DayOfWeek WeekStartDay,
     string? LogoUrl,
     string? PrimaryColor,
-    AqlamAcademy.Domain.Academics.GradingScale GradingScale = AqlamAcademy.Domain.Academics.GradingScale.Descriptive) : IRequest<Result<OrganizationSettingsDto>>;
+    AqlamAcademy.Domain.Academics.GradingScale GradingScale = AqlamAcademy.Domain.Academics.GradingScale.Descriptive,
+    string? ContactPhone = null,
+    string? ContactEmail = null) : IRequest<Result<OrganizationSettingsDto>>;
 
 public class UpdateOrganizationSettingsCommandValidator : AbstractValidator<UpdateOrganizationSettingsCommand>
 {
@@ -57,6 +61,10 @@ public class UpdateOrganizationSettingsCommandValidator : AbstractValidator<Upda
             .When(x => !string.IsNullOrEmpty(x.LogoUrl)).WithMessage("The logo must be an https URL.");
         RuleFor(x => x.PrimaryColor).Matches("^#[0-9a-fA-F]{6}$")
             .When(x => !string.IsNullOrEmpty(x.PrimaryColor)).WithMessage("Use a color like #1E6FD9.");
+        RuleFor(x => x.ContactPhone).Matches(@"^\+?[0-9][0-9 ()-]{5,30}$")
+            .When(x => !string.IsNullOrWhiteSpace(x.ContactPhone)).WithMessage("Enter a valid phone number.");
+        RuleFor(x => x.ContactEmail).EmailAddress().MaximumLength(256)
+            .When(x => !string.IsNullOrWhiteSpace(x.ContactEmail)).WithMessage("Enter a valid email address.");
     }
 }
 

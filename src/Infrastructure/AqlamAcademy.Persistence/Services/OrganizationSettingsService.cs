@@ -38,6 +38,8 @@ public class OrganizationSettingsService : IOrganizationSettingsService
         organization.GradingScale = command.GradingScale;
         organization.LogoUrl = string.IsNullOrWhiteSpace(command.LogoUrl) ? null : command.LogoUrl;
         organization.PrimaryColor = string.IsNullOrWhiteSpace(command.PrimaryColor) ? null : command.PrimaryColor.ToUpperInvariant();
+        organization.ContactPhone = string.IsNullOrWhiteSpace(command.ContactPhone) ? null : command.ContactPhone.Trim();
+        organization.ContactEmail = string.IsNullOrWhiteSpace(command.ContactEmail) ? null : command.ContactEmail.Trim();
         organization.LastModifiedAtUtc = DateTime.UtcNow;
         await _platform.SaveChangesAsync(cancellationToken);
 
@@ -45,5 +47,5 @@ public class OrganizationSettingsService : IOrganizationSettingsService
     }
 
     private static OrganizationSettingsDto ToDto(Organization o) => new(
-        o.Name, o.Slug, o.Type.ToString(), o.CountryCode, o.Currency, o.TimeZone, o.Calendar.ToString(), o.WeekStartDay, o.LogoUrl, o.PrimaryColor, o.GradingScale.ToString());
+        o.Name, o.Slug, o.Type.ToString(), o.CountryCode, o.Currency, o.TimeZone, o.Calendar.ToString(), o.WeekStartDay, o.LogoUrl, o.PrimaryColor, o.GradingScale.ToString(), o.ContactPhone, o.ContactEmail);
 }
