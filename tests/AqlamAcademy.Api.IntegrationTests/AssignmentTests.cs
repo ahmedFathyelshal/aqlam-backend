@@ -100,6 +100,7 @@ public class AssignmentTests(ApiFactory factory)
         Assert.Equal(lessonId, due.GetProperty("lessonId").GetString());
         Assert.False(due.GetProperty("isOverdue").GetBoolean());
         Assert.Equal(JsonValueKind.Null, home.GetProperty("latestResult").ValueKind);
+        Assert.Equal(85, home.GetProperty("achievementPercent").GetInt32());
 
         // Handed in: no longer due. Graded: becomes the latest result.
         (await Submit(student, org, lessonId, "My essay", [])).EnsureSuccessStatusCode();

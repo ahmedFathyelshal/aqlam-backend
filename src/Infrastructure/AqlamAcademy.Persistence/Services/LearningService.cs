@@ -114,7 +114,8 @@ public class LearningService : ILearningService
         return Result<LearnerHomeDto>.Success(new LearnerHomeDto(
             nextLessons,
             await DueItemsAsync(openLessons, now, cancellationToken),
-            await LatestResultAsync(enrollments, cancellationToken)));
+            await LatestResultAsync(enrollments, cancellationToken),
+            await _platform.Organizations.AsNoTracking().Where(o => o.Id == orgId).Select(o => o.AchievementPercent).FirstAsync(cancellationToken)));
     }
 
     /// <summary>Open assignments due within a week, plus overdue ones that are still accepted (for two weeks).</summary>

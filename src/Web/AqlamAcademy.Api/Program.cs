@@ -6,6 +6,7 @@ using AqlamAcademy.Application;
 using AqlamAcademy.Infrastructure.Persistence;
 using Scalar.AspNetCore;
 using Serilog;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,7 +47,24 @@ builder.Services.AddControllers()
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+// Behind a hosting proxy (Render): client IP for rate limits and login records, HTTPS for secure cookies.
+// The proxy's addresses are not known in advance, so it is trusted for the configured number of hops.
+var forwardedHeaders = builder.Configuration.GetValue<bool>("ForwardedHeaders:Enabled");
+if (forwardedHeaders)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+        options.ForwardLimit = builder.Configuration.GetValue("ForwardedHeaders:ForwardLimit", 1);
+    });
+}
+
 var app = builder.Build();
+
+if (forwardedHeaders)
+    app.UseForwardedHeaders();
 
 // 5. Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

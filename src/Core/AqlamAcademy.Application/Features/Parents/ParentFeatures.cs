@@ -22,7 +22,9 @@ public record ChildAttendanceDayDto(DateOnly Date, string Status);
 
 public record ChildAttendanceDto(int Present, int Absent, int Late, int Excused, IReadOnlyList<AttendanceEntryDto> Recent, IReadOnlyList<ChildAttendanceDayDto> Days);
 
-public record ChildSchoolDto(string Name, string? LogoUrl, string? ContactPhone, string? ContactEmail);
+public record ChildSummaryRulesDto(int FollowUpAbsentDays, int FollowUpLateDays, int GoodGradePercent, int LowGradePercent);
+
+public record ChildSchoolDto(string Name, string? LogoUrl, string? ContactPhone, string? ContactEmail, ChildSummaryRulesDto SummaryRules);
 
 /// <summary>Read-only view of one child inside one organization.</summary>
 public record ChildOverviewDto(

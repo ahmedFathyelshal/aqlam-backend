@@ -210,7 +210,8 @@ public class ParentService : IParentService
             Count(AttendanceStatus.Excused), history.Take(10).ToList(), SchoolDays(longHistory));
 
         var school = await _platform.Organizations.AsNoTracking().Where(o => o.Id == orgId)
-            .Select(o => new ChildSchoolDto(o.Name, o.LogoUrl, o.ContactPhone, o.ContactEmail))
+            .Select(o => new ChildSchoolDto(o.Name, o.LogoUrl, o.ContactPhone, o.ContactEmail,
+                new ChildSummaryRulesDto(o.FollowUpAbsentDays, o.FollowUpLateDays, o.GoodGradePercent, o.LowGradePercent)))
             .FirstAsync(cancellationToken);
 
         return Result<ChildOverviewDto>.Success(new ChildOverviewDto(childUserId, fullName, classes, courses, attendance, await GradesAsync(childUserId, cancellationToken), school));

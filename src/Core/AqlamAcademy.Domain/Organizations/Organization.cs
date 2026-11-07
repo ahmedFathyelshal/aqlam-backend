@@ -35,6 +35,13 @@ public class Organization : BaseEntity
     public string? ContactPhone { get; set; }
     public string? ContactEmail { get; set; }
 
+    // What counts as a concern or an achievement on parent and student pages
+    public int FollowUpAbsentDays { get; set; } = 3;
+    public int FollowUpLateDays { get; set; } = 5;
+    public int GoodGradePercent { get; set; } = 75;
+    public int LowGradePercent { get; set; } = 60;
+    public int AchievementPercent { get; set; } = 85;
+
     // Policies
     public PublicPublishingPolicy PublicPublishing { get; set; } = PublicPublishingPolicy.Allowed;
 

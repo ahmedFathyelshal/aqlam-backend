@@ -75,7 +75,7 @@ public record DueItemDto(Guid CourseId, string CourseTitle, Guid LessonId, strin
 public record LatestResultDto(string Kind, Guid CourseId, string CourseTitle, Guid LessonId, string Title, decimal Percent, DateTime AtUtc);
 
 /// <summary>What a student's home page needs from one organization.</summary>
-public record LearnerHomeDto(IReadOnlyList<NextLessonDto> NextLessons, IReadOnlyList<DueItemDto> Due, LatestResultDto? LatestResult);
+public record LearnerHomeDto(IReadOnlyList<NextLessonDto> NextLessons, IReadOnlyList<DueItemDto> Due, LatestResultDto? LatestResult, int AchievementPercent);
 
 public record EnrollmentDto(
     Guid UserId,

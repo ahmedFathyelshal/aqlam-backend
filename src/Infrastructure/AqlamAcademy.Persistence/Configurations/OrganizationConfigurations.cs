@@ -29,6 +29,11 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
         builder.Property(x => x.PrimaryColor).HasMaxLength(9);
         builder.Property(x => x.ContactPhone).HasMaxLength(32);
         builder.Property(x => x.ContactEmail).HasMaxLength(256);
+        builder.Property(x => x.FollowUpAbsentDays).HasDefaultValue(3);
+        builder.Property(x => x.FollowUpLateDays).HasDefaultValue(5);
+        builder.Property(x => x.GoodGradePercent).HasDefaultValue(75);
+        builder.Property(x => x.LowGradePercent).HasDefaultValue(60);
+        builder.Property(x => x.AchievementPercent).HasDefaultValue(85);
         builder.Property(x => x.DedicatedConnectionString).HasMaxLength(4000); // encrypted (Data Protection)
     }
 }
