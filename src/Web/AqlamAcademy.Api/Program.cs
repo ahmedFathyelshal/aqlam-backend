@@ -58,6 +58,9 @@ if (forwardedHeaders)
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
         options.ForwardLimit = builder.Configuration.GetValue("ForwardedHeaders:ForwardLimit", 1);
+        // Render's proxy can drop X-Forwarded-For on rewrites; its Cloudflare edge sends the visitor in CF-Connecting-IP.
+        if (builder.Configuration["ForwardedHeaders:ForwardedForHeaderName"] is { Length: > 0 } header)
+            options.ForwardedForHeaderName = header;
     });
 }
 

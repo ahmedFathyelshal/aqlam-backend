@@ -22,7 +22,8 @@ COPY --from=build /app .
 
 # Render routes traffic to port 10000 and terminates HTTPS in front of the container.
 ENV ASPNETCORE_HTTP_PORTS=10000 \
-    ForwardedHeaders__Enabled=true
+    ForwardedHeaders__Enabled=true \
+    ForwardedHeaders__ForwardedForHeaderName=CF-Connecting-IP
 EXPOSE 10000
 USER $APP_UID
 ENTRYPOINT ["dotnet", "AqlamAcademy.Api.dll"]
