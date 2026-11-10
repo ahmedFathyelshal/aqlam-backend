@@ -86,6 +86,49 @@ public class AssignmentTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.Conflict, onVideo.StatusCode);
     }
 
+    [Fact]
+    public async Task Student_home_shows_next_lesson_work_due_and_latest_result()
+    {
+        var (teacher, org, courseId, lessonId) = await AssignmentCourseAsync("home", maxPoints: 20, DateTime.UtcNow.AddDays(2), acceptLate: true);
+        var student = await EnrolledStudentAsync(org, courseId, "hs");
+
+        var home = await DataOf(await student.GetAsync($"/api/orgs/{org}/learn/home"));
+        var next = Assert.Single(home.GetProperty("nextLessons").EnumerateArray());
+        Assert.Equal("Intro video", next.GetProperty("title").GetString());
+        Assert.Equal("Unit 1", next.GetProperty("chapterTitle").GetString());
+        var due = Assert.Single(home.GetProperty("due").EnumerateArray());
+        Assert.Equal(lessonId, due.GetProperty("lessonId").GetString());
+        Assert.False(due.GetProperty("isOverdue").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, home.GetProperty("latestResult").ValueKind);
+        Assert.Equal(85, home.GetProperty("achievementPercent").GetInt32());
+
+        // Handed in: no longer due. Graded: becomes the latest result.
+        (await Submit(student, org, lessonId, "My essay", [])).EnsureSuccessStatusCode();
+        Assert.Empty((await DataOf(await student.GetAsync($"/api/orgs/{org}/learn/home"))).GetProperty("due").EnumerateArray());
+
+        var queue = await DataOf(await teacher.GetAsync($"/api/orgs/{org}/courses/{courseId}/submissions?pending=true"));
+        (await Grade(teacher, org, queue[0].GetProperty("id").GetString()!, score: 18)).EnsureSuccessStatusCode();
+        var result = (await DataOf(await student.GetAsync($"/api/orgs/{org}/learn/home"))).GetProperty("latestResult");
+        Assert.Equal("Assignment", result.GetProperty("kind").GetString());
+        Assert.Equal(90m, result.GetProperty("percent").GetDecimal());
+
+        // Another student's home is their own.
+        var other = await EnrolledStudentAsync(org, courseId, "ho");
+        var otherHome = await DataOf(await other.GetAsync($"/api/orgs/{org}/learn/home"));
+        Assert.Equal(JsonValueKind.Null, otherHome.GetProperty("latestResult").ValueKind);
+        Assert.Single(otherHome.GetProperty("due").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task Student_home_leaves_out_overdue_work_that_is_no_longer_accepted()
+    {
+        var (_, org, courseId, _) = await AssignmentCourseAsync("homel", maxPoints: 10, DateTime.UtcNow.AddDays(-2), acceptLate: false);
+        var student = await EnrolledStudentAsync(org, courseId, "hl");
+
+        var home = await DataOf(await student.GetAsync($"/api/orgs/{org}/learn/home"));
+        Assert.Empty(home.GetProperty("due").EnumerateArray());
+    }
+
     // ---- helpers -------------------------------------------------------------------------------------------
 
     private async Task<(HttpClient Teacher, string Org, string CourseId, string LessonId)> AssignmentCourseAsync(

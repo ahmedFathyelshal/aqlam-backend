@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/Logs/
+**/.vs/
+**/*.user
+tests/
+tools/
+TestApp.csproj
+test_concurrency.csx
+test_script.cs
+.git/

@@ -1,0 +1,48 @@
+# Render Blueprint for the Aqlam Academy demo (free plan, Frankfurt).
+# The database is on Neon, not Render: its connection string is entered when the Blueprint is created.
+# Secrets marked "sync: false" are asked for in the Render dashboard and never stored in Git.
+services:
+  # .NET API, built from the Dockerfile in this repo.
+  - type: web
+    name: aqlam-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    repo: https://github.com/ahmedFathyelshal/aqlam-backend
+    branch: feature/design-midad
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DatabaseSettings__ConnectionString
+        sync: false
+      - key: JwtSettings__Rsa__PrivateKeyXml
+        sync: false
+      - key: JwtSettings__Rsa__PublicKeyXml
+        sync: false
+      # The API's own host is the "main domain"; other hosts would be read as a school's custom domain.
+      - key: Cell__BaseDomain
+        value: aqlam-api.onrender.com
+      - key: Cors__AllowedOrigins__0
+        value: https://aqlam-academy.onrender.com
+
+  # Angular app as a static site. /api is forwarded to the API, so the browser sees one site
+  # and the sign-in cookies stay first-party.
+  - type: web
+    name: aqlam-academy
+    runtime: static
+    repo: https://github.com/ahmedFathyelshal/aqlam-frontend
+    branch: feature/design-midad
+    buildCommand: npm ci && npx ng build --configuration demo
+    staticPublishPath: dist/fuse/browser
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://aqlam-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html

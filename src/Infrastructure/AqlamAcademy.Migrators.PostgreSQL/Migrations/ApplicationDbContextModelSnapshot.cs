@@ -417,8 +417,21 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("AchievementPercent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(85);
+
                     b.Property<int>("Calendar")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ContactPhone")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<string>("CountryCode")
                         .IsRequired()
@@ -446,6 +459,21 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<int>("FollowUpAbsentDays")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(3);
+
+                    b.Property<int>("FollowUpLateDays")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(5);
+
+                    b.Property<int>("GoodGradePercent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(75);
+
                     b.Property<int>("GradingScale")
                         .HasColumnType("integer");
 
@@ -464,6 +492,11 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<string>("LogoUrl")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("LowGradePercent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(60);
 
                     b.Property<string>("Name")
                         .IsRequired()

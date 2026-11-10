@@ -77,6 +77,14 @@ public class ListEnrollmentsQueryHandler(ILearningService learning) : IRequestHa
         learning.ListEnrollmentsAsync(request.CourseId, cancellationToken);
 }
 
+public record GetLearnerHomeQuery : IRequest<Result<LearnerHomeDto>>;
+
+public class GetLearnerHomeQueryHandler(ILearningService learning) : IRequestHandler<GetLearnerHomeQuery, Result<LearnerHomeDto>>
+{
+    public Task<Result<LearnerHomeDto>> Handle(GetLearnerHomeQuery request, CancellationToken cancellationToken) =>
+        learning.GetHomeAsync(cancellationToken);
+}
+
 public record GetMyCoursesQuery : IRequest<Result<IReadOnlyList<MyCourseDto>>>;
 
 public class GetMyCoursesQueryHandler(ILearningService learning) : IRequestHandler<GetMyCoursesQuery, Result<IReadOnlyList<MyCourseDto>>>

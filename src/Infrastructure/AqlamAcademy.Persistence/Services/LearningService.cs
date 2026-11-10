@@ -2,6 +2,7 @@ using AqlamAcademy.Application.Common.Interfaces;
 using AqlamAcademy.Application.Common.Models;
 using AqlamAcademy.Application.Features.Learning;
 using AqlamAcademy.Application.Features.Teacher.Courses.DTOs;
+using AqlamAcademy.Domain.Assessments;
 using AqlamAcademy.Domain.Courses;
 using AqlamAcademy.Domain.Enums;
 using AqlamAcademy.Domain.Learning;
@@ -72,6 +73,103 @@ public class LearningService : ILearningService
             enrollment?.ExpiresAtUtc, enrollment?.ProgressPercent ?? 0,
             enrollment?.LastLessonId ?? LessonAccess.VisibleLessons(course).FirstOrDefault()?.Id,
             chapters));
+    }
+
+    public async Task<Result<LearnerHomeDto>> GetHomeAsync(CancellationToken cancellationToken)
+    {
+        if (_currentOrganization.OrganizationId is not { } orgId)
+            return Result<LearnerHomeDto>.NotFound("Organization not found.");
+
+        var now = DateTime.UtcNow;
+        var enrollments = (await _platform.Enrollments.AsNoTracking()
+                .Where(e => e.UserId == _currentUser.UserId && e.OrganizationId == orgId && e.Status == EnrollmentStatus.Active)
+                .ToListAsync(cancellationToken))
+            .Where(e => e.IsUsable(now))
+            .ToList();
+
+        var nextLessons = new List<NextLessonDto>();
+        var openLessons = new Dictionary<Guid, (string CourseTitle, string Title)>();
+        foreach (var enrollment in enrollments)
+        {
+            var access = await _access.ResolveAsync(enrollment.CourseId, cancellationToken);
+            if (access.Failure is not null || access.Enrollment is null)
+                continue;
+
+            var course = access.Course!;
+            var progress = await _access.LoadProgressAsync(course.Id, cancellationToken);
+            var locks = _access.EvaluateLocks(course, access.Enrollment, false, progress);
+            var lessons = course.Chapters.OrderBy(c => c.Order)
+                .SelectMany(c => c.Lessons.Where(l => l.IsPublished).OrderBy(l => l.Order).Select(l => (Chapter: c, Lesson: l)))
+                .Where(x => !locks[x.Lesson.Id].IsLocked)
+                .ToList();
+
+            foreach (var (_, lesson) in lessons)
+                openLessons[lesson.Id] = (course.Title, lesson.Title);
+
+            var next = lessons.FirstOrDefault(x => !(progress.TryGetValue(x.Lesson.Id, out var p) && p.IsCompleted));
+            if (next.Lesson is not null)
+                nextLessons.Add(new NextLessonDto(course.Id, next.Lesson.Id, next.Lesson.Title, next.Chapter.Title, next.Lesson.Type.ToString(), next.Lesson.DurationInMinutes));
+        }
+
+        return Result<LearnerHomeDto>.Success(new LearnerHomeDto(
+            nextLessons,
+            await DueItemsAsync(openLessons, now, cancellationToken),
+            await LatestResultAsync(enrollments, cancellationToken),
+            await _platform.Organizations.AsNoTracking().Where(o => o.Id == orgId).Select(o => o.AchievementPercent).FirstAsync(cancellationToken)));
+    }
+
+    /// <summary>Open assignments due within a week, plus overdue ones that are still accepted (for two weeks).</summary>
+    private async Task<List<DueItemDto>> DueItemsAsync(Dictionary<Guid, (string CourseTitle, string Title)> openLessons, DateTime now, CancellationToken cancellationToken)
+    {
+        var lessonIds = openLessons.Keys.ToList();
+        var weekAhead = now.AddDays(7);
+        var overdueLimit = now.AddDays(-14);
+        var userId = _currentUser.UserId;
+
+        var assignments = await _tenant.Assignments.AsNoTracking()
+            .Where(a => lessonIds.Contains(a.LessonId) && a.DueAtUtc != null && a.DueAtUtc <= weekAhead
+                && (a.DueAtUtc >= now || (a.AcceptLateSubmissions && a.DueAtUtc >= overdueLimit)))
+            .ToListAsync(cancellationToken);
+        var handedIn = await _tenant.AssignmentSubmissions.AsNoTracking()
+            .Where(s => s.UserId == userId && lessonIds.Contains(s.LessonId) && s.Status != SubmissionStatus.ReturnedForRevision)
+            .Select(s => s.LessonId)
+            .ToListAsync(cancellationToken);
+
+        return assignments
+            .Where(a => !handedIn.Contains(a.LessonId))
+            .OrderBy(a => a.DueAtUtc)
+            .Select(a => new DueItemDto(a.CourseId, openLessons[a.LessonId].CourseTitle, a.LessonId, openLessons[a.LessonId].Title, a.DueAtUtc!.Value, a.DueAtUtc < now))
+            .ToList();
+    }
+
+    private async Task<LatestResultDto?> LatestResultAsync(List<Enrollment> enrollments, CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.UserId;
+        var courseIds = enrollments.Select(e => e.CourseId).ToList();
+
+        var quiz = await _tenant.QuizAttempts.AsNoTracking()
+            .Where(a => a.UserId == userId && a.SubmittedAtUtc != null && courseIds.Contains(a.CourseId))
+            .OrderByDescending(a => a.SubmittedAtUtc)
+            .Select(a => new { a.CourseId, a.LessonId, a.Percent, At = a.SubmittedAtUtc!.Value })
+            .FirstOrDefaultAsync(cancellationToken);
+        var graded = await (
+                from s in _tenant.AssignmentSubmissions.AsNoTracking()
+                join a in _tenant.Assignments.AsNoTracking() on s.AssignmentId equals a.Id
+                where s.UserId == userId && s.Status == SubmissionStatus.Graded && s.Score != null && a.MaxPoints > 0 && courseIds.Contains(s.CourseId)
+                orderby s.GradedAtUtc descending
+                select new { s.CourseId, s.LessonId, Percent = s.Score!.Value * 100 / a.MaxPoints, At = s.GradedAtUtc ?? s.SubmittedAtUtc })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (quiz is null && graded is null)
+            return null;
+
+        var useQuiz = graded is null || (quiz is not null && quiz.At >= graded.At);
+        var (courseId, lessonId, percent, at) = useQuiz
+            ? (quiz!.CourseId, quiz.LessonId, quiz.Percent, quiz.At)
+            : (graded!.CourseId, graded.LessonId, Math.Round(graded.Percent, 1), graded.At);
+        var title = await _tenant.CourseLessons.AsNoTracking().Where(l => l.Id == lessonId).Select(l => l.Title).FirstOrDefaultAsync(cancellationToken);
+
+        return new LatestResultDto(useQuiz ? "Quiz" : "Assignment", courseId, enrollments.First(e => e.CourseId == courseId).CourseTitle, lessonId, title ?? string.Empty, percent, at);
     }
 
     public async Task<Result<LessonContentDto>> GetLessonAsync(Guid lessonId, CancellationToken cancellationToken)
