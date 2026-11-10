@@ -422,6 +422,11 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(85);
 
+                    b.Property<TimeOnly>("AttendanceDueBy")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("time without time zone")
+                        .HasDefaultValue(new TimeOnly(10, 0, 0));
+
                     b.Property<int>("Calendar")
                         .HasColumnType("integer");
 
@@ -476,6 +481,11 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
 
                     b.Property<int>("GradingScale")
                         .HasColumnType("integer");
+
+                    b.Property<int>("GroupAttendanceGraceMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(30);
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");

@@ -23,7 +23,9 @@ public record OrganizationSettingsDto(
     int FollowUpLateDays = 5,
     int GoodGradePercent = 75,
     int LowGradePercent = 60,
-    int AchievementPercent = 85);
+    int AchievementPercent = 85,
+    TimeOnly? AttendanceDueBy = null,
+    int GroupAttendanceGraceMinutes = 30);
 
 public interface IOrganizationSettingsService
 {
@@ -54,7 +56,9 @@ public record UpdateOrganizationSettingsCommand(
     int FollowUpLateDays = 5,
     int GoodGradePercent = 75,
     int LowGradePercent = 60,
-    int AchievementPercent = 85) : IRequest<Result<OrganizationSettingsDto>>;
+    int AchievementPercent = 85,
+    TimeOnly? AttendanceDueBy = null,
+    int GroupAttendanceGraceMinutes = 30) : IRequest<Result<OrganizationSettingsDto>>;
 
 public class UpdateOrganizationSettingsCommandValidator : AbstractValidator<UpdateOrganizationSettingsCommand>
 {
@@ -82,6 +86,9 @@ public class UpdateOrganizationSettingsCommandValidator : AbstractValidator<Upda
         RuleFor(x => x.LowGradePercent).InclusiveBetween(0, 100)
             .LessThan(x => x.GoodGradePercent).WithMessage("The low grade limit must be below the good grade limit.");
         RuleFor(x => x.AchievementPercent).InclusiveBetween(1, 100);
+        RuleFor(x => x.AttendanceDueBy).InclusiveBetween(new TimeOnly(5, 0), new TimeOnly(23, 0))
+            .When(x => x.AttendanceDueBy is not null).WithMessage("Choose a time between 05:00 and 23:00.");
+        RuleFor(x => x.GroupAttendanceGraceMinutes).InclusiveBetween(0, 240);
     }
 }
 

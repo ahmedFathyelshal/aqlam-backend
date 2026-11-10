@@ -11,7 +11,8 @@ public record MembershipSummaryDto(
     IReadOnlyList<string> Roles,
     string TimeZone = "Asia/Riyadh",
     string Calendar = "Both",
-    DayOfWeek WeekStartDay = DayOfWeek.Sunday);
+    DayOfWeek WeekStartDay = DayOfWeek.Sunday,
+    string? LogoUrl = null);
 
 public interface IMembershipService
 {
