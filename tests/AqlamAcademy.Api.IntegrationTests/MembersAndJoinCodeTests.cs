@@ -8,7 +8,7 @@ namespace AqlamAcademy.Api.IntegrationTests;
 public class MembersAndJoinCodeTests(ApiFactory factory)
 {
     [Fact]
-    public async Task Owner_adds_a_teacher_who_can_then_author_courses_in_the_organization()
+    public async Task Center_teachers_create_courses_only_when_the_center_allows_it()
     {
         var (owner, org) = await CreateOrganizationWithOwnerAsync();
         var teacher = factory.CreateBrowserClient();
@@ -17,8 +17,24 @@ public class MembersAndJoinCodeTests(ApiFactory factory)
         var add = await owner.PostAsJsonAsync($"/api/orgs/{org}/members", new { userName = teacherName, roles = new[] { "Teacher" } });
         Assert.Equal(HttpStatusCode.OK, add.StatusCode);
 
+        // Off by default: the center creates its courses.
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.PostAsJsonAsync($"/api/orgs/{org}/courses/draft", new { title = "Grade 8 Math" })).StatusCode);
+        var ownerDraft = await owner.PostAsJsonAsync($"/api/orgs/{org}/courses/draft", new { title = "Center course" });
+        var ownerCourseId = (await ownerDraft.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data").GetProperty("id").GetString();
+
+        (await owner.PutAsJsonAsync($"/api/orgs/{org}/settings", new { name = "Al Noor Center", timeZone = "Asia/Riyadh", calendar = "Both", weekStartDay = "Sunday", teachersCreateCourses = true }))
+            .EnsureSuccessStatusCode();
+        var membership = (await teacher.GetFromJsonAsync<JsonElement>("/api/me/memberships")).GetProperty("data").EnumerateArray().Single(m => m.GetProperty("slug").GetString() == org);
+        Assert.True(membership.GetProperty("teachersCreateCourses").GetBoolean());
+
         var draft = await teacher.PostAsJsonAsync($"/api/orgs/{org}/courses/draft", new { title = "Grade 8 Math" });
         Assert.Equal(HttpStatusCode.OK, draft.StatusCode);
+
+        // A teacher sees and edits their own courses, not the center's other ones.
+        var mine = (await teacher.GetFromJsonAsync<JsonElement>($"/api/orgs/{org}/courses")).GetProperty("data");
+        Assert.Equal("Grade 8 Math", mine.EnumerateArray().Single().GetProperty("title").GetString());
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.GetAsync($"/api/orgs/{org}/courses/{ownerCourseId}/draft")).StatusCode);
+        Assert.Equal(2, (await owner.GetFromJsonAsync<JsonElement>($"/api/orgs/{org}/courses")).GetProperty("data").GetArrayLength());
 
         var members = (await owner.GetFromJsonAsync<JsonElement>($"/api/orgs/{org}/members")).GetProperty("data");
         Assert.Contains(members.EnumerateArray(), m => m.GetProperty("userName").GetString() == teacherName);

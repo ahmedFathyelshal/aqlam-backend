@@ -528,6 +528,11 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("TeachersCreateCourses")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("TimeZone")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -593,6 +598,28 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.HasIndex("OrganizationId");
 
                     b.ToTable("OrganizationDomains", "Organizations");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.OrganizationLogo", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("OrganizationId");
+
+                    b.ToTable("OrganizationLogos", "Organizations");
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Organizations.ParentInvite", b =>
@@ -1254,6 +1281,15 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .IsRequired();
 
                     b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.OrganizationLogo", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Organizations.Organization", null)
+                        .WithOne()
+                        .HasForeignKey("AqlamAcademy.Domain.Organizations.OrganizationLogo", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Organizations.ParentInvite", b =>

@@ -62,8 +62,10 @@ public class CourseLifecycleTests(ApiFactory factory)
         (await admin.PostAsJsonAsync("/api/platform/organizations", new { name = "Pilot School", slug, type = "School", countryCode = "SA", ownerUserName = ownerName })).EnsureSuccessStatusCode();
         (await owner.PostAsJsonAsync($"/api/orgs/{slug}/members", new { userName = teacherName, roles = new[] { "Teacher" } })).EnsureSuccessStatusCode();
 
-        var courseId = await CreateDraftAsync(teacher, slug);
-        await MakePublishableAsync(teacher, slug, courseId);
+        // In a school the school creates courses; a teacher cannot.
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.PostAsJsonAsync($"/api/orgs/{slug}/courses/draft", new { title = "Loose course" })).StatusCode);
+        var courseId = await CreateDraftAsync(owner, slug);
+        await MakePublishableAsync(owner, slug, courseId);
 
         var teacherPublish = await teacher.PutAsJsonAsync($"/api/orgs/{slug}/courses/{courseId}/status", new { status = "Published" });
         var ownerPublish = await owner.PutAsJsonAsync($"/api/orgs/{slug}/courses/{courseId}/status", new { status = "Published" });

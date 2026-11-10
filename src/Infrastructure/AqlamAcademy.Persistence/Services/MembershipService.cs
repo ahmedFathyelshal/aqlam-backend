@@ -45,7 +45,7 @@ public class MembershipService : IMembershipService
                      && m.Status == MembershipStatus.Active
                      && m.Organization.Status == OrganizationStatus.Active)
             .OrderBy(m => m.JoinedAtUtc)
-            .Select(m => new { m.OrganizationId, m.Organization.Slug, m.Organization.Name, m.Organization.Type, m.Organization.CountryCode, m.Organization.TimeZone, m.Organization.Calendar, m.Organization.WeekStartDay, m.Organization.LogoUrl, m.Roles })
+            .Select(m => new { m.OrganizationId, m.Organization.Slug, m.Organization.Name, m.Organization.Type, m.Organization.CountryCode, m.Organization.TimeZone, m.Organization.Calendar, m.Organization.WeekStartDay, m.Organization.LogoUrl, m.Organization.TeachersCreateCourses, m.Roles })
             .ToListAsync(cancellationToken);
 
         return memberships
@@ -62,7 +62,8 @@ public class MembershipService : IMembershipService
                 m.TimeZone,
                 m.Calendar.ToString(),
                 m.WeekStartDay,
-                m.LogoUrl))
+                m.LogoUrl,
+                m.TeachersCreateCourses))
             .ToList();
     }
 }

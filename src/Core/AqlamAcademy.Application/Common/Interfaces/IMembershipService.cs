@@ -12,7 +12,8 @@ public record MembershipSummaryDto(
     string TimeZone = "Asia/Riyadh",
     string Calendar = "Both",
     DayOfWeek WeekStartDay = DayOfWeek.Sunday,
-    string? LogoUrl = null);
+    string? LogoUrl = null,
+    bool TeachersCreateCourses = false);
 
 public interface IMembershipService
 {
