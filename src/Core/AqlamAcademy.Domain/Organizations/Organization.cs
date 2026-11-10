@@ -42,6 +42,12 @@ public class Organization : BaseEntity
     public int LowGradePercent { get; set; } = 60;
     public int AchievementPercent { get; set; } = 85;
 
+    // When attendance that has not been taken counts as late on the owner's overview (organization time)
+    /// <summary>A school's daily attendance is late after this time.</summary>
+    public TimeOnly AttendanceDueBy { get; set; } = new(10, 0);
+    /// <summary>A center group's attendance is late this many minutes after the meeting starts.</summary>
+    public int GroupAttendanceGraceMinutes { get; set; } = 30;
+
     // Policies
     public PublicPublishingPolicy PublicPublishing { get; set; } = PublicPublishingPolicy.Allowed;
 

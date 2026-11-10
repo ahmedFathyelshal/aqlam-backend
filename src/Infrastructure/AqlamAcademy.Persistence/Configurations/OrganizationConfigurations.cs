@@ -34,6 +34,8 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
         builder.Property(x => x.GoodGradePercent).HasDefaultValue(75);
         builder.Property(x => x.LowGradePercent).HasDefaultValue(60);
         builder.Property(x => x.AchievementPercent).HasDefaultValue(85);
+        builder.Property(x => x.AttendanceDueBy).HasDefaultValue(new TimeOnly(10, 0));
+        builder.Property(x => x.GroupAttendanceGraceMinutes).HasDefaultValue(30);
         builder.Property(x => x.DedicatedConnectionString).HasMaxLength(4000); // encrypted (Data Protection)
     }
 }

@@ -9,7 +9,7 @@ services:
     plan: free
     region: frankfurt
     repo: https://github.com/ahmedFathyelshal/aqlam-backend
-    branch: feature/design-midad
+    branch: development
     dockerfilePath: ./Dockerfile
     dockerContext: .
     envVars:
@@ -33,7 +33,7 @@ services:
     name: aqlam-academy
     runtime: static
     repo: https://github.com/ahmedFathyelshal/aqlam-frontend
-    branch: feature/design-midad
+    branch: development
     buildCommand: npm ci && npx ng build --configuration demo
     staticPublishPath: dist/fuse/browser
     envVars:

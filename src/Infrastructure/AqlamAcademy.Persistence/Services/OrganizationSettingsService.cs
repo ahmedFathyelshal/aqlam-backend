@@ -45,6 +45,8 @@ public class OrganizationSettingsService : IOrganizationSettingsService
         organization.GoodGradePercent = command.GoodGradePercent;
         organization.LowGradePercent = command.LowGradePercent;
         organization.AchievementPercent = command.AchievementPercent;
+        organization.AttendanceDueBy = command.AttendanceDueBy ?? organization.AttendanceDueBy;
+        organization.GroupAttendanceGraceMinutes = command.GroupAttendanceGraceMinutes;
         organization.LastModifiedAtUtc = DateTime.UtcNow;
         await _platform.SaveChangesAsync(cancellationToken);
 
@@ -53,5 +55,6 @@ public class OrganizationSettingsService : IOrganizationSettingsService
 
     private static OrganizationSettingsDto ToDto(Organization o) => new(
         o.Name, o.Slug, o.Type.ToString(), o.CountryCode, o.Currency, o.TimeZone, o.Calendar.ToString(), o.WeekStartDay, o.LogoUrl, o.PrimaryColor, o.GradingScale.ToString(), o.ContactPhone, o.ContactEmail,
-        o.FollowUpAbsentDays, o.FollowUpLateDays, o.GoodGradePercent, o.LowGradePercent, o.AchievementPercent);
+        o.FollowUpAbsentDays, o.FollowUpLateDays, o.GoodGradePercent, o.LowGradePercent, o.AchievementPercent,
+        o.AttendanceDueBy, o.GroupAttendanceGraceMinutes);
 }
