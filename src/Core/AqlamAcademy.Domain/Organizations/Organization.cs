@@ -48,6 +48,12 @@ public class Organization : BaseEntity
     /// <summary>A center group's attendance is late this many minutes after the meeting starts.</summary>
     public int GroupAttendanceGraceMinutes { get; set; } = 30;
 
+    /// <summary>
+    /// Centers only: teachers may create their own courses. Schools never allow it (subjects and their courses
+    /// come from the school's classes); a personal academy always does.
+    /// </summary>
+    public bool TeachersCreateCourses { get; set; }
+
     // Policies
     public PublicPublishingPolicy PublicPublishing { get; set; } = PublicPublishingPolicy.Allowed;
 

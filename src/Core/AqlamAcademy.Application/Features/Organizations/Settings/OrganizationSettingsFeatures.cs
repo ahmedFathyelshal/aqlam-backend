@@ -25,12 +25,44 @@ public record OrganizationSettingsDto(
     int LowGradePercent = 60,
     int AchievementPercent = 85,
     TimeOnly? AttendanceDueBy = null,
-    int GroupAttendanceGraceMinutes = 30);
+    int GroupAttendanceGraceMinutes = 30,
+    bool TeachersCreateCourses = false);
 
 public interface IOrganizationSettingsService
 {
     Task<Result<OrganizationSettingsDto>> GetAsync(CancellationToken cancellationToken);
     Task<Result<OrganizationSettingsDto>> UpdateAsync(UpdateOrganizationSettingsCommand command, CancellationToken cancellationToken);
+    Task<Result<OrganizationSettingsDto>> SaveLogoAsync(byte[] content, CancellationToken cancellationToken);
+    Task<Result<OrganizationSettingsDto>> RemoveLogoAsync(CancellationToken cancellationToken);
+    /// <summary>For the public logo address: no sign-in, looked up by slug.</summary>
+    Task<OrganizationLogo?> GetLogoAsync(string slug, CancellationToken cancellationToken);
+}
+
+/// <summary>Uploads the school's logo (PNG, JPEG or WebP, at most 256 KB) and points the logo address at it.</summary>
+public record SaveOrganizationLogoCommand(byte[] Content) : IRequest<Result<OrganizationSettingsDto>>;
+
+public class SaveOrganizationLogoCommandValidator : AbstractValidator<SaveOrganizationLogoCommand>
+{
+    public SaveOrganizationLogoCommandValidator()
+    {
+        RuleFor(x => x.Content).NotEmpty().WithMessage("Choose an image file.")
+            .Must(c => c.Length <= OrganizationLogo.MaxBytes).WithMessage("The logo must be 256 KB or smaller.")
+            .Must(c => OrganizationLogo.DetectContentType(c) is not null).WithMessage("Use a PNG, JPEG or WebP image.");
+    }
+}
+
+public class SaveOrganizationLogoCommandHandler(IOrganizationSettingsService settings) : IRequestHandler<SaveOrganizationLogoCommand, Result<OrganizationSettingsDto>>
+{
+    public Task<Result<OrganizationSettingsDto>> Handle(SaveOrganizationLogoCommand request, CancellationToken cancellationToken) =>
+        settings.SaveLogoAsync(request.Content, cancellationToken);
+}
+
+public record RemoveOrganizationLogoCommand : IRequest<Result<OrganizationSettingsDto>>;
+
+public class RemoveOrganizationLogoCommandHandler(IOrganizationSettingsService settings) : IRequestHandler<RemoveOrganizationLogoCommand, Result<OrganizationSettingsDto>>
+{
+    public Task<Result<OrganizationSettingsDto>> Handle(RemoveOrganizationLogoCommand request, CancellationToken cancellationToken) =>
+        settings.RemoveLogoAsync(cancellationToken);
 }
 
 public record GetOrganizationSettingsQuery : IRequest<Result<OrganizationSettingsDto>>;
@@ -58,7 +90,8 @@ public record UpdateOrganizationSettingsCommand(
     int LowGradePercent = 60,
     int AchievementPercent = 85,
     TimeOnly? AttendanceDueBy = null,
-    int GroupAttendanceGraceMinutes = 30) : IRequest<Result<OrganizationSettingsDto>>;
+    int GroupAttendanceGraceMinutes = 30,
+    bool? TeachersCreateCourses = null) : IRequest<Result<OrganizationSettingsDto>>;
 
 public class UpdateOrganizationSettingsCommandValidator : AbstractValidator<UpdateOrganizationSettingsCommand>
 {
@@ -71,7 +104,7 @@ public class UpdateOrganizationSettingsCommandValidator : AbstractValidator<Upda
         RuleFor(x => x.WeekStartDay).IsInEnum();
         RuleFor(x => x.GradingScale).IsInEnum();
         RuleFor(x => x.LogoUrl)
-            .Must(url => Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps)
+            .Must(url => OrganizationLogo.IsPublicPath(url) || (Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps))
             .When(x => !string.IsNullOrEmpty(x.LogoUrl)).WithMessage("The logo must be an https URL.");
         RuleFor(x => x.PrimaryColor).Matches("^#[0-9a-fA-F]{6}$")
             .When(x => !string.IsNullOrEmpty(x.PrimaryColor)).WithMessage("Use a color like #1E6FD9.");

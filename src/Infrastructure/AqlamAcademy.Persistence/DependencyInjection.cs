@@ -86,6 +86,7 @@ public static class DependencyInjection
         services.AddScoped<AqlamAcademy.Application.Features.Attendance.IAttendanceService, AttendanceService>();
         services.AddScoped<AqlamAcademy.Application.Features.Parents.IParentService, ParentService>();
         services.AddScoped<AqlamAcademy.Application.Features.Organizations.Overview.IOrganizationOverviewService, OrganizationOverviewService>();
+        services.AddScoped<AqlamAcademy.Application.Common.Interfaces.ICourseAccess, CourseAccess>();
         services.AddScoped<AqlamAcademy.Application.Features.Organizations.Settings.IOrganizationSettingsService, OrganizationSettingsService>();
 
         // Email: queued and sent in the background; logged only when no SMTP host is configured.

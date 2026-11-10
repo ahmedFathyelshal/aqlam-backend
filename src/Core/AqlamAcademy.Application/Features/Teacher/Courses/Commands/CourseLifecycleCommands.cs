@@ -10,10 +10,12 @@ namespace AqlamAcademy.Application.Features.Teacher.Courses.Commands;
 
 public record ListCoursesQuery : IRequest<Result<IReadOnlyList<CourseSummaryDto>>>;
 
-public class ListCoursesQueryHandler(ICourseService courses) : IRequestHandler<ListCoursesQuery, Result<IReadOnlyList<CourseSummaryDto>>>
+/// <summary>Every course for people who run the organization; a teacher's own and assigned courses otherwise.</summary>
+public class ListCoursesQueryHandler(ICourseService courses, ICourseAccess access, ICurrentUserService currentUser) : IRequestHandler<ListCoursesQuery, Result<IReadOnlyList<CourseSummaryDto>>>
 {
     public async Task<Result<IReadOnlyList<CourseSummaryDto>>> Handle(ListCoursesQuery request, CancellationToken cancellationToken) =>
-        Result<IReadOnlyList<CourseSummaryDto>>.Success(await courses.ListAsync(cancellationToken));
+        Result<IReadOnlyList<CourseSummaryDto>>.Success(await courses.ListAsync(
+            await access.SeesAllCoursesAsync(cancellationToken) ? null : currentUser.UserId, cancellationToken));
 }
 
 /// <summary>What still blocks publishing; an empty list means the course is ready.</summary>

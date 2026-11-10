@@ -12,7 +12,8 @@ public interface ICourseService
     Task<CourseDraftDto> CreateDraftAsync(Course course, CancellationToken cancellationToken);
     Task<CourseDraftDto?> GetDraftByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<Course?> GetCourseByIdAsync(Guid id, CancellationToken cancellationToken);
-    Task<IReadOnlyList<CourseSummaryDto>> ListAsync(CancellationToken cancellationToken);
+    /// <param name="teacherUserId">Null for every course; otherwise only courses the teacher created or teaches.</param>
+    Task<IReadOnlyList<CourseSummaryDto>> ListAsync(Guid? teacherUserId, CancellationToken cancellationToken);
 
     Task UpdateIdentityAsync(Guid id, string title, int? curriculumId, int? stageId, int? gradeId, int? subjectId, CancellationToken cancellationToken);
     Task UpdateCommercialsAsync(Guid id, PricingType? pricingType, decimal? price, bool codeActivationOnly, AccessExpiryPolicy? expiryPolicy, int? accessDurationDays, CancellationToken cancellationToken);

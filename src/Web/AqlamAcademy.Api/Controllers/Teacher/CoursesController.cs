@@ -17,6 +17,7 @@ namespace AqlamAcademy.Api.Controllers.Teacher;
 [Route("api/courses")]
 [ApiController]
 [HasPermission(Permissions.CoursesEdit)]
+[CourseAccess]
 public class CoursesController : ControllerBase
 {
     private readonly IMediator _mediator;

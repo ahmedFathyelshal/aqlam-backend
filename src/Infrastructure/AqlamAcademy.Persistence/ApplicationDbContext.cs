@@ -36,6 +36,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     // Organizations (tenants) and memberships
     public DbSet<Organization> Organizations => Set<Organization>();
     public DbSet<OrganizationDomain> OrganizationDomains => Set<OrganizationDomain>();
+    public DbSet<OrganizationLogo> OrganizationLogos => Set<OrganizationLogo>();
     public DbSet<Membership> Memberships => Set<Membership>();
     public DbSet<JoinCode> JoinCodes => Set<JoinCode>();
     public DbSet<AqlamAcademy.Domain.Learning.Enrollment> Enrollments => Set<AqlamAcademy.Domain.Learning.Enrollment>();

@@ -36,7 +36,19 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
         builder.Property(x => x.AchievementPercent).HasDefaultValue(85);
         builder.Property(x => x.AttendanceDueBy).HasDefaultValue(new TimeOnly(10, 0));
         builder.Property(x => x.GroupAttendanceGraceMinutes).HasDefaultValue(30);
+        builder.Property(x => x.TeachersCreateCourses).HasDefaultValue(false);
         builder.Property(x => x.DedicatedConnectionString).HasMaxLength(4000); // encrypted (Data Protection)
+    }
+}
+
+public class OrganizationLogoConfiguration : IEntityTypeConfiguration<OrganizationLogo>
+{
+    public void Configure(EntityTypeBuilder<OrganizationLogo> builder)
+    {
+        builder.ToTable("OrganizationLogos", SchemaNames.Organizations);
+        builder.HasKey(x => x.OrganizationId);
+        builder.Property(x => x.ContentType).IsRequired().HasMaxLength(32);
+        builder.HasOne<Organization>().WithOne().HasForeignKey<OrganizationLogo>(x => x.OrganizationId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 

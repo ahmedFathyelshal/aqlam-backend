@@ -44,8 +44,10 @@ public class CourseService : ICourseService
         return course?.Adapt<CourseDraftDto>();
     }
 
-    public async Task<IReadOnlyList<CourseSummaryDto>> ListAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyList<CourseSummaryDto>> ListAsync(Guid? teacherUserId, CancellationToken cancellationToken) =>
         await _context.Courses.AsNoTracking()
+            .Where(c => teacherUserId == null || c.CreatedByUserId == teacherUserId
+                || _context.TeachingAssignments.Any(a => a.CourseId == c.Id && a.TeacherUserId == teacherUserId))
             .OrderByDescending(c => c.LastModifiedAtUtc ?? c.CreatedAtUtc)
             .Select(c => new CourseSummaryDto(
                 c.Id,
