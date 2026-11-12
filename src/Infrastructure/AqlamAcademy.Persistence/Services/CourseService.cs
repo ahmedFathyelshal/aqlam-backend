@@ -17,12 +17,21 @@ public class CourseService : ICourseService
     private readonly TenantDbContext _context;
     private readonly ICurrentOrganization _currentOrganization;
     private readonly ClassEnrollmentSync _classEnrollments;
+    private readonly MarketplaceIndex _marketplace;
 
-    public CourseService(TenantDbContext context, ICurrentOrganization currentOrganization, ClassEnrollmentSync classEnrollments)
+    public CourseService(TenantDbContext context, ICurrentOrganization currentOrganization, ClassEnrollmentSync classEnrollments, MarketplaceIndex marketplace)
     {
         _context = context;
         _currentOrganization = currentOrganization;
         _classEnrollments = classEnrollments;
+        _marketplace = marketplace;
+    }
+
+    /// <summary>The public marketplace copy follows every saved change (or drops the course when it is no longer public).</summary>
+    private async Task ReindexAsync(Guid courseId, CancellationToken cancellationToken)
+    {
+        if (_currentOrganization.OrganizationId is { } orgId)
+            await _marketplace.RefreshCourseAsync(orgId, courseId, _context, cancellationToken);
     }
 
     public async Task<CourseDraftDto> CreateDraftAsync(Course course, CancellationToken cancellationToken)
@@ -76,6 +85,7 @@ public class CourseService : ICourseService
         course.LastModifiedAtUtc = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
+        await ReindexAsync(id, cancellationToken);
     }
 
     public async Task UpdateCommercialsAsync(Guid id, PricingType? pricingType, decimal? price, bool codeActivationOnly, AccessExpiryPolicy? expiryPolicy, int? accessDurationDays, CancellationToken cancellationToken)
@@ -91,6 +101,7 @@ public class CourseService : ICourseService
         course.LastModifiedAtUtc = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
+        await ReindexAsync(id, cancellationToken);
     }
 
     public async Task UpdateMediaAsync(Guid id, string? subtitle, string? thumbnailUrl, string? promoVideoUrl, CancellationToken cancellationToken)
@@ -104,6 +115,7 @@ public class CourseService : ICourseService
         course.LastModifiedAtUtc = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
+        await ReindexAsync(id, cancellationToken);
     }
 
     public async Task<Result<CourseDraftDto>> SyncCurriculumAsync(SyncCurriculumCommand command, CancellationToken cancellationToken)
@@ -191,6 +203,7 @@ public class CourseService : ICourseService
         }
 
         _context.ChangeTracker.Clear();
+        await ReindexAsync(course.Id, cancellationToken);
         return Result<CourseDraftDto>.Success((await GetDraftByIdAsync(course.Id, cancellationToken))!);
     }
 
@@ -226,6 +239,7 @@ public class CourseService : ICourseService
         // A class subject space going live gives its students access.
         if (_currentOrganization.OrganizationId is { } orgId)
             await _classEnrollments.EnrollRostersOfCourseAsync(orgId, course, cancellationToken);
+        await ReindexAsync(course.Id, cancellationToken);
 
         return Result<CourseDraftDto>.Success(course.Adapt<CourseDraftDto>());
     }
@@ -239,6 +253,7 @@ public class CourseService : ICourseService
         course.Visibility = visibility;
         course.LastModifiedAtUtc = DateTime.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
+        await ReindexAsync(course.Id, cancellationToken);
 
         return Result<CourseDraftDto>.Success(course.Adapt<CourseDraftDto>());
     }

@@ -17,13 +17,15 @@ public class AssignmentService : IAssignmentService
     private readonly ApplicationDbContext _platform;
     private readonly ICurrentUserService _currentUser;
     private readonly LearnerAccess _access;
+    private readonly ICourseAccess _courseAccess;
 
-    public AssignmentService(TenantDbContext tenant, ApplicationDbContext platform, ICurrentUserService currentUser, LearnerAccess access)
+    public AssignmentService(TenantDbContext tenant, ApplicationDbContext platform, ICurrentUserService currentUser, LearnerAccess access, ICourseAccess courseAccess)
     {
         _tenant = tenant;
         _platform = platform;
         _currentUser = currentUser;
         _access = access;
+        _courseAccess = courseAccess;
     }
 
     public async Task<Result<AssignmentSettingsDto>> GetSettingsAsync(Guid courseId, Guid lessonId, CancellationToken cancellationToken)
@@ -80,7 +82,8 @@ public class AssignmentService : IAssignmentService
     public async Task<Result<SubmissionDto>> GradeAsync(Guid submissionId, decimal? score, string? feedback, bool returnForRevision, CancellationToken cancellationToken)
     {
         var submission = await _tenant.AssignmentSubmissions.FirstOrDefaultAsync(s => s.Id == submissionId, cancellationToken);
-        if (submission is null)
+        // A teacher grades only work in courses they may work on; to anyone else the submission does not exist.
+        if (submission is null || !await _courseAccess.CanWorkOnAsync(submission.CourseId, cancellationToken))
             return Result<SubmissionDto>.NotFound("Submission not found.");
 
         var maxPoints = (await _tenant.Assignments.AsNoTracking().FirstOrDefaultAsync(a => a.LessonId == submission.LessonId, cancellationToken))?.MaxPoints ?? 10;

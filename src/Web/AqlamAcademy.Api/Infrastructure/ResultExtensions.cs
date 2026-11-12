@@ -14,6 +14,7 @@ public static class ResultExtensions
         ResultErrorType.Forbidden => controller.StatusCode(StatusCodes.Status403Forbidden, result),
         ResultErrorType.Unauthorized => controller.Unauthorized(result),
         ResultErrorType.Conflict => controller.Conflict(result),
+        ResultErrorType.TooManyRequests => controller.StatusCode(StatusCodes.Status429TooManyRequests, result),
         _ => controller.BadRequest(result)
     };
 }

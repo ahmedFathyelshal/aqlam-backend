@@ -20,6 +20,10 @@ public class TeacherProfileConfiguration : IEntityTypeConfiguration<TeacherProfi
         builder.Property(t => t.Specialization)
             .HasMaxLength(250);
 
+        builder.Property(t => t.PublicName).HasMaxLength(100);
+        builder.Property(t => t.Headline).HasMaxLength(160);
+        builder.Property(t => t.City).HasMaxLength(80);
+
         // 1:1 Relationship with ApplicationUser (navigation lives in EF only, not on the domain entity)
         builder.HasOne<ApplicationUser>()
             .WithOne()

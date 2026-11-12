@@ -257,34 +257,8 @@ public class LearningService : ILearningService
             return Result<MyCourseDto>.Failure(ResultErrorType.Forbidden, "This course requires a purchase or an activation code.");
 
         var userId = _currentUser.UserId;
-        var membership = await _platform.Memberships.FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == userId, cancellationToken);
-        if (membership is { Status: MembershipStatus.Pending })
-            return Result<MyCourseDto>.Failure(ResultErrorType.Forbidden, "Your membership is waiting for approval.");
-        if (membership is { Status: MembershipStatus.Suspended })
-            return Result<MyCourseDto>.Failure(ResultErrorType.Forbidden, "Your membership in this organization is suspended.");
-
-        if (membership is null)
-        {
-            _platform.Memberships.Add(new Membership
-            {
-                OrganizationId = orgId,
-                UserId = userId,
-                Roles = OrganizationRole.Student,
-                Status = MembershipStatus.Active,
-                Source = MembershipSource.PublicEnrollment
-            });
-        }
-        else if (membership.Status == MembershipStatus.Left)
-        {
-            membership.Roles = OrganizationRole.Student;
-            membership.Status = MembershipStatus.Active;
-            membership.Source = MembershipSource.PublicEnrollment;
-            membership.JoinedAtUtc = DateTime.UtcNow;
-        }
-        else
-        {
-            membership.Roles |= OrganizationRole.Student;
-        }
+        if (await StudentMembershipWriter.EnsureAsync(_platform, orgId, userId, MembershipSource.PublicEnrollment, cancellationToken) is { } refused)
+            return Fail<MyCourseDto>(refused);
 
         var enrollment = await _platform.Enrollments.FirstOrDefaultAsync(e => e.UserId == userId && e.CourseId == courseId, cancellationToken);
         if (enrollment is not null && enrollment.IsUsable(DateTime.UtcNow))

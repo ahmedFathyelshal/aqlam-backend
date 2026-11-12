@@ -89,6 +89,21 @@ public static class DependencyInjection
         services.AddScoped<AqlamAcademy.Application.Common.Interfaces.ICourseAccess, CourseAccess>();
         services.AddScoped<AqlamAcademy.Application.Features.Organizations.Settings.IOrganizationSettingsService, OrganizationSettingsService>();
 
+        // Marketplace, payments and activation codes (Phase 5)
+        services.AddSingleton(databaseSettings);
+        services.AddScoped<TenantStores>();
+        services.AddScoped<MarketplaceIndex>();
+        services.AddScoped<AqlamAcademy.Application.Features.Marketplace.IMarketplaceReader, MarketplaceReader>();
+        services.AddScoped<AqlamAcademy.Application.Features.Marketplace.IPublicProfileService, PublicProfileService>();
+        services.AddScoped<AqlamAcademy.Application.Features.Marketplace.IPlatformMarketplaceService, PlatformMarketplaceService>();
+        services.Configure<Payments.PaymentSettings>(configuration.GetSection(Payments.PaymentSettings.SectionName));
+        services.AddSingleton<Payments.IPaymentProvider, Payments.TestPaymentProvider>();
+        services.AddSingleton<Payments.PaymentProviders>();
+        services.AddScoped<AqlamAcademy.Application.Features.Payments.IPaymentService, Payments.PaymentService>();
+        services.AddScoped<AqlamAcademy.Application.Features.Payments.IEarningsService, Payments.EarningsService>();
+        services.AddScoped<Payments.CodeHashKey>();
+        services.AddScoped<AqlamAcademy.Application.Features.Payments.IActivationCodeService, Payments.ActivationCodeService>();
+
         // Email: queued and sent in the background; logged only when no SMTP host is configured.
         services.Configure<Messaging.EmailSettings>(configuration.GetSection(Messaging.EmailSettings.SectionName));
         services.AddSingleton<Messaging.EmailQueue>();

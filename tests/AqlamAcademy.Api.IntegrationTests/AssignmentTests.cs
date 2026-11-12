@@ -131,10 +131,35 @@ public class AssignmentTests(ApiFactory factory)
 
     // ---- helpers -------------------------------------------------------------------------------------------
 
+    [Fact]
+    public async Task A_teacher_cannot_grade_work_in_another_teachers_course_by_its_id()
+    {
+        var center = await TestSchool.CreateAsync(factory, "Center");
+        (await center.Owner.PutAsJsonAsync($"{center.Api}/settings",
+            new { name = "Tamayoz", timeZone = "Africa/Cairo", calendar = "Gregorian", weekStartDay = "Saturday", teachersCreateCourses = true })).EnsureSuccessStatusCode();
+        var author = await center.AddMemberAsync("Teacher", prefix: "auth");
+        var outsider = await center.AddMemberAsync("Teacher", prefix: "outs");
+
+        var (_, _, courseId, lessonId) = await AssignmentCourseAsync(author.Client, center.Owner, center.Slug, maxPoints: 10, dueAtUtc: null, acceptLate: true);
+        var student = await EnrolledStudentAsync(center.Slug, courseId, "cs");
+        var submissionId = (await DataOf(await Submit(student, center.Slug, lessonId, "work", []))).GetProperty("id").GetString()!;
+
+        Assert.Equal(HttpStatusCode.NotFound, (await Grade(outsider.Client, center.Slug, submissionId, score: 1)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Grade(author.Client, center.Slug, submissionId, score: 9)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Grade(center.Owner, center.Slug, submissionId, score: 8)).StatusCode);
+    }
+
     private async Task<(HttpClient Teacher, string Org, string CourseId, string LessonId)> AssignmentCourseAsync(
         string prefix, decimal maxPoints, DateTime? dueAtUtc, bool acceptLate)
     {
         var (teacher, org) = await TeacherWithPersonalOrgAsync(factory, prefix);
+        return await AssignmentCourseAsync(teacher, teacher, org, maxPoints, dueAtUtc, acceptLate);
+    }
+
+    /// <summary>The author builds the course; the publisher (who may be the author) puts it live and public.</summary>
+    private static async Task<(HttpClient Teacher, string Org, string CourseId, string LessonId)> AssignmentCourseAsync(
+        HttpClient teacher, HttpClient publisher, string org, decimal maxPoints, DateTime? dueAtUtc, bool acceptLate)
+    {
         var courseId = await CreateDraftAsync(teacher, org);
         await MakePublishableAsync(teacher, org, courseId);
 
@@ -145,8 +170,8 @@ public class AssignmentTests(ApiFactory factory)
 
         (await teacher.PutAsJsonAsync($"/api/orgs/{org}/courses/{courseId}/lessons/{lessonId}/assignment",
             new { maxPoints, dueAtUtc, acceptLateSubmissions = acceptLate })).EnsureSuccessStatusCode();
-        (await teacher.PutAsJsonAsync($"/api/orgs/{org}/courses/{courseId}/status", new { status = "Published" })).EnsureSuccessStatusCode();
-        (await teacher.PutAsJsonAsync($"/api/orgs/{org}/courses/{courseId}/visibility", new { visibility = "Public" })).EnsureSuccessStatusCode();
+        (await publisher.PutAsJsonAsync($"/api/orgs/{org}/courses/{courseId}/status", new { status = "Published" })).EnsureSuccessStatusCode();
+        (await publisher.PutAsJsonAsync($"/api/orgs/{org}/courses/{courseId}/visibility", new { visibility = "Public" })).EnsureSuccessStatusCode();
         return (teacher, org, courseId, lessonId);
     }
 

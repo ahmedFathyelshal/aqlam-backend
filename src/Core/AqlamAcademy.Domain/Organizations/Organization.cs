@@ -57,6 +57,9 @@ public class Organization : BaseEntity
     // Policies
     public PublicPublishingPolicy PublicPublishing { get; set; } = PublicPublishingPolicy.Allowed;
 
+    /// <summary>Commission agreed with this organization; null uses the platform rate.</summary>
+    public decimal? CommissionPercent { get; set; }
+
     /// <summary>Saudi users read Hijri and Gregorian dates side by side; elsewhere Gregorian.</summary>
     public static CalendarDisplay DefaultCalendarFor(string countryCode) =>
         countryCode == "SA" ? CalendarDisplay.Both : CalendarDisplay.Gregorian;
