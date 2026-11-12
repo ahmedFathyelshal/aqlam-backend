@@ -21,10 +21,12 @@ public class ApplicationDbInitializer
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly PlatformSettings _platform;
     private readonly TenantDatabaseMigrator _tenantDatabases;
+    private readonly MarketplaceIndex _marketplace;
 
     public ApplicationDbInitializer(ILogger<ApplicationDbInitializer> logger, ApplicationDbContext context, TenantDbContext tenantContext, PersonalOrganizationFactory personalOrganizations,
-        UserManager<ApplicationUser> userManager, IOptions<PlatformSettings> platformSettings, TenantDatabaseMigrator tenantDatabases)
+        UserManager<ApplicationUser> userManager, IOptions<PlatformSettings> platformSettings, TenantDatabaseMigrator tenantDatabases, MarketplaceIndex marketplace)
     {
+        _marketplace = marketplace;
         _logger = logger;
         _context = context;
         _tenantContext = tenantContext;
@@ -78,6 +80,9 @@ public class ApplicationDbInitializer
 
         await BackfillPersonalOrganizationsAsync();
         await EnsureBootstrapAdminAsync();
+
+        // Public copies of public courses: catches courses published before the marketplace existed.
+        await _marketplace.RebuildAllAsync(CancellationToken.None);
     }
 
     /// <summary>

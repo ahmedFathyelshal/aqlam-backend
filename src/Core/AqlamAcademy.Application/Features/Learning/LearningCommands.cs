@@ -43,12 +43,12 @@ public class RecordProgressCommandHandler(ILearningService learning) : IRequestH
 }
 
 /// <summary>Student enrolls in a free, published course that is public or unlisted.</summary>
-public record EnrollSelfCommand(Guid CourseId) : IRequest<Result<MyCourseDto>>;
+public record EnrollSelfCommand(Guid CourseId, Guid? ForUserId = null) : IRequest<Result<MyCourseDto>>;
 
 public class EnrollSelfCommandHandler(ILearningService learning) : IRequestHandler<EnrollSelfCommand, Result<MyCourseDto>>
 {
     public Task<Result<MyCourseDto>> Handle(EnrollSelfCommand request, CancellationToken cancellationToken) =>
-        learning.EnrollSelfAsync(request.CourseId, cancellationToken);
+        learning.EnrollSelfAsync(request.CourseId, request.ForUserId, cancellationToken);
 }
 
 /// <summary>Staff enroll existing members of the organization (e.g. a class) into a course.</summary>

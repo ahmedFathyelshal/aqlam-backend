@@ -96,7 +96,8 @@ public interface ILearningService
     Task<Result<LessonContentDto>> GetLessonAsync(Guid lessonId, CancellationToken cancellationToken);
     Task<Result<ProgressResultDto>> RecordProgressAsync(Guid lessonId, int? positionSeconds, int? watchedPercent, bool markCompleted, CancellationToken cancellationToken);
 
-    Task<Result<MyCourseDto>> EnrollSelfAsync(Guid courseId, CancellationToken cancellationToken);
+    /// <summary>Joins a free course; a parent may pass a linked child's id.</summary>
+    Task<Result<MyCourseDto>> EnrollSelfAsync(Guid courseId, Guid? forUserId, CancellationToken cancellationToken);
     Task<Result<IReadOnlyList<EnrollMemberResultDto>>> EnrollMembersAsync(Guid courseId, IReadOnlyList<string> userNames, CancellationToken cancellationToken);
     Task<Result<IReadOnlyList<EnrollmentDto>>> ListEnrollmentsAsync(Guid courseId, CancellationToken cancellationToken);
 

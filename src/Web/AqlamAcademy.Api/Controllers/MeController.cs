@@ -78,6 +78,17 @@ public class MeController : ControllerBase
     public async Task<IActionResult> LinkChild([FromBody] RedeemParentInviteCommand command, CancellationToken cancellationToken) =>
         ToActionResult(await _mediator.Send(command, cancellationToken));
 
+    /// <summary>A parent creates their child's account (required under 13) and is linked to it.</summary>
+    [HttpPost("children/new")]
+    [EnableRateLimiting(PresentationDependencyInjection.AuthRateLimitPolicy)]
+    public async Task<IActionResult> CreateChild([FromBody] CreateChildAccountCommand command, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(command, cancellationToken));
+
+    /// <summary>A student's family code for a parent who will pay or follow them (shows the open code if there is one).</summary>
+    [HttpPost("family-invite")]
+    public async Task<IActionResult> FamilyInvite(CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new CreateFamilyInviteCommand(), cancellationToken));
+
     private IActionResult ToActionResult(Result result) =>
         result.Succeeded ? Ok(result) : this.ToFailureResult(result);
 }

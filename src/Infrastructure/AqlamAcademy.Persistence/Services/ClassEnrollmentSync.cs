@@ -9,24 +9,69 @@ namespace AqlamAcademy.Infrastructure.Persistence.Services;
 /// <summary>Creates or reactivates a student's enrollment (one row per student and course).</summary>
 public static class EnrollmentWriter
 {
-    public static Enrollment Upsert(ApplicationDbContext platform, Enrollment? enrollment, Guid userId, Guid orgId, Course course, EnrollmentSource source)
+    public static Enrollment Upsert(ApplicationDbContext platform, Enrollment? enrollment, Guid userId, Guid orgId, Course course, EnrollmentSource source) =>
+        Upsert(platform, enrollment, userId, orgId, course.Id, course.Title, course.AccessExpiryPolicy, course.AccessDurationDays, source);
+
+    /// <summary>For callers that hold a copy of the course rather than the course (payments, activation codes).</summary>
+    public static Enrollment Upsert(ApplicationDbContext platform, Enrollment? enrollment, Guid userId, Guid orgId,
+        Guid courseId, string courseTitle, AccessExpiryPolicy? expiryPolicy, int? accessDurationDays, EnrollmentSource source)
     {
         var now = DateTime.UtcNow;
         if (enrollment is null)
         {
-            enrollment = new Enrollment { UserId = userId, OrganizationId = orgId, CourseId = course.Id };
+            enrollment = new Enrollment { UserId = userId, OrganizationId = orgId, CourseId = courseId };
             platform.Enrollments.Add(enrollment);
         }
 
         // New or renewed access starts now (expired/revoked enrollments are reused).
-        enrollment.CourseTitle = course.Title;
+        enrollment.CourseTitle = courseTitle;
         enrollment.Source = source;
         enrollment.Status = EnrollmentStatus.Active;
         enrollment.StartsAtUtc = now;
-        enrollment.ExpiresAtUtc = course.AccessExpiryPolicy == AccessExpiryPolicy.Limited && course.AccessDurationDays is > 0
-            ? now.AddDays(course.AccessDurationDays.Value)
+        enrollment.ExpiresAtUtc = expiryPolicy == AccessExpiryPolicy.Limited && accessDurationDays is > 0
+            ? now.AddDays(accessDurationDays.Value)
             : null;
         return enrollment;
+    }
+}
+
+/// <summary>
+/// Makes the user a student of the organization when they join a course on their own (free enrolment, purchase,
+/// activation code). Pending and suspended memberships are refused; a member who left becomes a student again.
+/// </summary>
+public static class StudentMembershipWriter
+{
+    public static async Task<Application.Common.Models.Result?> EnsureAsync(ApplicationDbContext platform, Guid orgId, Guid userId,
+        Domain.Organizations.MembershipSource source, CancellationToken cancellationToken)
+    {
+        var membership = await platform.Memberships.FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == userId, cancellationToken);
+        switch (membership)
+        {
+            case { Status: Domain.Organizations.MembershipStatus.Pending }:
+                return Application.Common.Models.Result<object>.Failure(Application.Common.Models.ResultErrorType.Forbidden, "Your membership is waiting for approval.");
+            case { Status: Domain.Organizations.MembershipStatus.Suspended }:
+                return Application.Common.Models.Result<object>.Failure(Application.Common.Models.ResultErrorType.Forbidden, "Your membership in this organization is suspended.");
+            case null:
+                platform.Memberships.Add(new Domain.Organizations.Membership
+                {
+                    OrganizationId = orgId,
+                    UserId = userId,
+                    Roles = Domain.Organizations.OrganizationRole.Student,
+                    Status = Domain.Organizations.MembershipStatus.Active,
+                    Source = source
+                });
+                break;
+            case { Status: Domain.Organizations.MembershipStatus.Left }:
+                membership.Roles = Domain.Organizations.OrganizationRole.Student;
+                membership.Status = Domain.Organizations.MembershipStatus.Active;
+                membership.Source = source;
+                membership.JoinedAtUtc = DateTime.UtcNow;
+                break;
+            default:
+                membership.Roles |= Domain.Organizations.OrganizationRole.Student;
+                break;
+        }
+        return null;
     }
 }
 

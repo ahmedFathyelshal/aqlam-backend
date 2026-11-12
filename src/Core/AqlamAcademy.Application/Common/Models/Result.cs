@@ -10,7 +10,8 @@ public enum ResultErrorType
     NotFound = 2,
     Forbidden = 3,
     Conflict = 4,
-    Unauthorized = 5
+    Unauthorized = 5,
+    TooManyRequests = 6
 }
 
 public class Result

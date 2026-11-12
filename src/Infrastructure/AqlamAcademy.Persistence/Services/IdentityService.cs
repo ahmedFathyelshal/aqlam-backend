@@ -111,7 +111,9 @@ public class IdentityService : IIdentityService
         string userName, 
         string email,
         string password, 
-        UserType userType)
+        UserType userType,
+        int? birthYear = null,
+        string? fullName = null)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -121,7 +123,8 @@ public class IdentityService : IIdentityService
             {
                 UserName = userName,
                 Email = email,
-                FullName = string.Empty, // Default value as it's no longer collected at registration
+                FullName = fullName ?? string.Empty, // self-registration does not ask for a name
+                BirthYear = birthYear,
                 EmailConfirmed = true 
             };
 

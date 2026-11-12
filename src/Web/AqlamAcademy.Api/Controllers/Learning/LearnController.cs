@@ -34,8 +34,13 @@ public class LearnController : ControllerBase
         ToActionResult(await _mediator.Send(new GetLearnerCourseQuery(courseId), cancellationToken));
 
     [HttpPost("courses/{courseId:guid}/enroll")]
-    public async Task<IActionResult> Enroll(Guid courseId, CancellationToken cancellationToken) =>
-        ToActionResult(await _mediator.Send(new EnrollSelfCommand(courseId), cancellationToken));
+    public async Task<IActionResult> Enroll(Guid courseId, [FromQuery] Guid? forUserId, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new EnrollSelfCommand(courseId, forUserId), cancellationToken));
+
+    /// <summary>Starts paying for a paid course; the response says where to send the student.</summary>
+    [HttpPost("courses/{courseId:guid}/checkout")]
+    public async Task<IActionResult> Checkout(Guid courseId, [FromQuery] Guid? forUserId, CancellationToken cancellationToken) =>
+        ToActionResult(await _mediator.Send(new Application.Features.Payments.CheckoutCommand(courseId, forUserId), cancellationToken));
 
     [HttpGet("lessons/{lessonId:guid}")]
     public async Task<IActionResult> Lesson(Guid lessonId, CancellationToken cancellationToken) =>

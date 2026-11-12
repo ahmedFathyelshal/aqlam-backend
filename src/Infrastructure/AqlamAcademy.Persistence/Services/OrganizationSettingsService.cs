@@ -10,11 +10,13 @@ public class OrganizationSettingsService : IOrganizationSettingsService
 {
     private readonly ApplicationDbContext _platform;
     private readonly ICurrentOrganization _currentOrganization;
+    private readonly MarketplaceIndex _marketplace;
 
-    public OrganizationSettingsService(ApplicationDbContext platform, ICurrentOrganization currentOrganization)
+    public OrganizationSettingsService(ApplicationDbContext platform, ICurrentOrganization currentOrganization, MarketplaceIndex marketplace)
     {
         _platform = platform;
         _currentOrganization = currentOrganization;
+        _marketplace = marketplace;
     }
 
     public async Task<Result<OrganizationSettingsDto>> GetAsync(CancellationToken cancellationToken)
@@ -93,6 +95,8 @@ public class OrganizationSettingsService : IOrganizationSettingsService
             organization.TeachersCreateCourses = teachersCreate;
         organization.LastModifiedAtUtc = DateTime.UtcNow;
         await _platform.SaveChangesAsync(cancellationToken);
+        // The name shows on the organization's public course cards.
+        await _marketplace.RefreshTeacherAsync(organization.Id, cancellationToken);
 
         return Result<OrganizationSettingsDto>.Success(ToDto(organization));
     }

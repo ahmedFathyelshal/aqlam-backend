@@ -31,6 +31,14 @@ public class RegisterUserValidator : AbstractValidator<RegisterUserCommand>
 
         RuleFor(v => v.UserType)
             .IsInEnum().WithMessage(localizer[ValidationMessages.InvalidUserType]);
+
+        // Students give a birth year; under 13 a parent creates the account (AgeRules).
+        RuleFor(v => v.BirthYear).Cascade(CascadeMode.Stop)
+            .NotNull().WithMessage("Enter your birth year.")
+            .Must(y => AqlamAcademy.Domain.Common.AgeRules.IsValidBirthYear(y!.Value, DateTime.UtcNow)).WithMessage("Enter a valid birth year.")
+            .Must(y => AqlamAcademy.Domain.Common.AgeRules.MaySelfRegister(y!.Value, DateTime.UtcNow))
+            .WithMessage("Students under 13 need a parent to create their account.")
+            .When(v => v.UserType == AqlamAcademy.Domain.Enums.UserType.Student);
     }
 
     public async Task<bool> BeUniqueUserName(string userName, CancellationToken cancellationToken)

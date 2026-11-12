@@ -37,6 +37,7 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
         builder.Property(x => x.AttendanceDueBy).HasDefaultValue(new TimeOnly(10, 0));
         builder.Property(x => x.GroupAttendanceGraceMinutes).HasDefaultValue(30);
         builder.Property(x => x.TeachersCreateCourses).HasDefaultValue(false);
+        builder.Property(x => x.CommissionPercent).HasPrecision(5, 2);
         builder.Property(x => x.DedicatedConnectionString).HasMaxLength(4000); // encrypted (Data Protection)
     }
 }

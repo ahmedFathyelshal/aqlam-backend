@@ -48,7 +48,9 @@ const users = new Map();
 async function user(userName, type) {
   if (users.has(userName)) return users.get(userName);
   const c = new Client(userName);
-  const reg = await c.req('POST', '/api/Auth/register', { userName, email: `${userName}@demo.aqlam.local`, password: PASSWORD, confirmPassword: PASSWORD, userType: type });
+  // Demo students are 15 (school age): they study and use codes, and a linked parent pays for them.
+  const birthYear = type === STUDENT ? new Date().getFullYear() - 15 : null;
+  const reg = await c.req('POST', '/api/Auth/register', { userName, email: `${userName}@demo.aqlam.local`, password: PASSWORD, confirmPassword: PASSWORD, userType: type, birthYear });
   if (reg.status >= 300 && reg.status !== 400 && reg.status !== 409) throw new Error(`register ${userName}: ${JSON.stringify(reg.body)}`);
   const login = await c.req('POST', '/api/Auth/login', { userName, password: PASSWORD });
   if (login.status !== 200) throw new Error(`login ${userName} failed (${login.status}). If the user exists with another password, delete it or rename the demo user.`);
@@ -189,6 +191,20 @@ async function buildAndPublish(staff, publisher, org, courseId, subjectName, que
   });
   if (draft.status === 'Draft') await publisher.put(`/api/orgs/${org}/courses/${courseId}/status`, { status: 'Published' });
   return { lessons, quiz, hw };
+}
+
+/** A public course of an independent teacher, built, published and listed. Reuses one with the same title. Returns its id. */
+async function publicCourse(teacher, org, bank, { title, subtitle, curriculumId, stageId, gradeId, subjectId: subject, pricingType, price, codeActivationOnly }) {
+  let course = (await teacher.get(`/api/orgs/${org}/courses`)).find(c => c.title === title);
+  if (!course) {
+    course = await teacher.post(`/api/orgs/${org}/courses/draft`, { title });
+    await teacher.put(`/api/orgs/${org}/courses/${course.id}/identity`, { id: course.id, title, curriculumId, stageId, gradeId, subjectId: subject });
+    await teacher.put(`/api/orgs/${org}/courses/${course.id}/commercials`, { id: course.id, pricingType, price, codeActivationOnly, accessExpiryPolicy: 'Unlimited', accessDurationDays: null });
+    await teacher.put(`/api/orgs/${org}/courses/${course.id}/media`, { id: course.id, subtitle, thumbnailUrl: null, promoVideoUrl: null });
+  }
+  await buildAndPublish(teacher, teacher, org, course.id, title.split(':')[0], bank);
+  await teacher.put(`/api/orgs/${org}/courses/${course.id}/visibility`, { visibility: 'Public' });
+  return course.id;
 }
 
 /** A student studies: watches/reads, takes the quiz (good or weak), hands in homework. */
@@ -432,6 +448,50 @@ async function main() {
   }
   log(`  ✓ public free course in ${hudaOrg}, 2 self-enrolled students`);
 
+  // ---- 4. Marketplace: public teacher pages, a paid course, a code-only course, picks --------------------
+  log('4) Marketplace');
+  await tHuda.put(`/api/orgs/${hudaOrg}/public-profile`, {
+    publicName: 'أ. هدى العتيبي', headline: 'معلمة رياضيات وقدرات للمرحلة الثانوية', city: 'الرياض', gender: 'Female', isListed: true,
+    bio: 'أدرّس الرياضيات منذ اثني عشر عامًا، وأساعد الطالبات على الاستعداد لاختبارَي القدرات والتحصيلي بخطة أسبوعية واضحة واختبارات محاكية.',
+  });
+  const tahsiliTp = await gradeOf(admin, 'SA_ADMISSION_TESTS', 0, 1);
+  const tahsili = await publicCourse(tHuda, hudaOrg, hBank, {
+    title: 'تحصيلي رياضيات: مراجعة شاملة', subtitle: 'كل موضوعات الرياضيات في الاختبار التحصيلي مع حل نماذج سابقة',
+    ...tahsiliTp, subjectId: mathId, pricingType: 'Paid', price: 149, codeActivationOnly: false,
+  });
+  const algebraTp = await gradeOf(admin, 'SA_NATIONAL', 2, 0);
+  const algebra = await publicCourse(tHuda, hudaOrg, hBank, {
+    title: 'الجبر للصف الأول الثانوي', subtitle: 'للطالبات المسجلات عبر المكتبات المعتمدة', ...algebraTp, subjectId: mathId,
+    pricingType: 'Paid', price: 99, codeActivationOnly: true,
+  });
+  const batches = await tHuda.get(`/api/orgs/${hudaOrg}/courses/${algebra}/code-batches`);
+  let demoCodes = [];
+  if (!batches.length) {
+    demoCodes = (await tHuda.post(`/api/orgs/${hudaOrg}/courses/${algebra}/code-batches`, { name: 'مكتبة النور - فرع العليا', quantity: 20, expiresAtUtc: null })).codes;
+  }
+
+  const tMajed = await user('t.majed', TEACHER);
+  const majedOrg = (await tMajed.get('/api/me/memberships')).find(m => m.type === 'Personal').slug;
+  const mBank = await questionBank(tMajed, majedOrg, {});
+  const physicsTp = await gradeOf(admin, 'SA_NATIONAL', 2, 1);
+  await publicCourse(tMajed, majedOrg, mBank, {
+    title: 'فيزياء ثاني ثانوي: الحركة والقوى', subtitle: 'شرح مبسط بالتجارب والأمثلة المحلولة', ...physicsTp,
+    subjectId: subjectId('physics', 'فيزياء'), pricingType: 'Free', price: null, codeActivationOnly: false,
+  });
+  await tMajed.put(`/api/orgs/${majedOrg}/public-profile`, {
+    publicName: 'أ. ماجد الحربي', headline: 'معلم فيزياء للمرحلة الثانوية', city: 'جدة', gender: 'Male', isListed: true,
+    bio: 'معلم فيزياء، أركّز على الفهم قبل الحفظ، وأربط كل درس بتجربة يمكن تنفيذها في البيت.',
+  });
+
+  // Picks by أقلام (not a ranking). Fee rates are left for the platform owner to set.
+  const picks = await admin.get('/api/platform/marketplace/featured');
+  for (const [slug, subject] of [[hudaOrg, mathId], [majedOrg, subjectId('physics', 'فيزياء')]]) {
+    if (!picks.some(p => p.teacher.slug === slug && p.subjectId === subject))
+      await admin.post('/api/platform/marketplace/featured', { slug, subjectId: subject, order: 1 });
+  }
+  log(`  ✓ listed teachers ${hudaOrg} and ${majedOrg}; paid course ${tahsili}; code-only course ${algebra}`);
+  if (demoCodes.length) log(`  activation codes for "الجبر للصف الأول الثانوي" (shown once): ${demoCodes.slice(0, 5).join(', ')}`);
+
   log(`
 Done. All demo users use the password ${PASSWORD}
   Platform admin : ${ADMIN_USER}
@@ -441,7 +501,7 @@ Done. All demo users use the password ${PASSWORD}
   Parents        : p.qahtani (s.omar + s.sara) · p.mother.lama (s.lama) · p.hassan (s.ali, center) · p.new (no child yet)
                    family code for s.yousef → ${spareCode.code} (sign in as p.new, My children, enter it)
   Center (EG)    : tamayoz.owner, t.mostafa · students s.mariam s.ali s.hana s.karim
-  Independent    : t.huda (public course "قدرات - القسم الكمي")`);
+  Independent    : t.huda (listed; free Qudrat course, paid Tahsili course, code-only algebra course) · t.majed (listed; free physics)`);
 }
 
 main().catch(err => { console.error('\n❌ ' + err.message); process.exitCode = 1; });

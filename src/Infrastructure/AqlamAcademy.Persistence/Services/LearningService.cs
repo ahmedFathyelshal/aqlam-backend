@@ -23,10 +23,12 @@ public class LearningService : ILearningService
     private readonly ICurrentOrganization _currentOrganization;
     private readonly IMembershipService _memberships;
     private readonly LearnerAccess _access;
+    private readonly Learners _learners;
 
     public LearningService(TenantDbContext tenant, ApplicationDbContext platform, ICurrentUserService currentUser,
-        ICurrentOrganization currentOrganization, IMembershipService memberships, LearnerAccess access)
+        ICurrentOrganization currentOrganization, IMembershipService memberships, LearnerAccess access, Learners learners)
     {
+        _learners = learners;
         _tenant = tenant;
         _platform = platform;
         _currentUser = currentUser;
@@ -244,8 +246,13 @@ public class LearningService : ILearningService
             lessonId, progress.WatchedPercent, progress.LastPositionSeconds, progress.IsCompleted, justCompleted, percent));
     }
 
-    public async Task<Result<MyCourseDto>> EnrollSelfAsync(Guid courseId, CancellationToken cancellationToken)
+    public async Task<Result<MyCourseDto>> EnrollSelfAsync(Guid courseId, Guid? forUserId, CancellationToken cancellationToken)
     {
+        // A parent may join a free course for a linked child.
+        var (learnerId, notLinked) = await _learners.ResolveAsync(forUserId, cancellationToken);
+        if (notLinked is not null)
+            return Fail<MyCourseDto>(notLinked);
+
         if (_currentOrganization.OrganizationId is not { } orgId)
             return Result<MyCourseDto>.NotFound("Organization not found.");
 
@@ -256,35 +263,9 @@ public class LearningService : ILearningService
         if (course.PricingType != PricingType.Free || course.CodeActivationOnly)
             return Result<MyCourseDto>.Failure(ResultErrorType.Forbidden, "This course requires a purchase or an activation code.");
 
-        var userId = _currentUser.UserId;
-        var membership = await _platform.Memberships.FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == userId, cancellationToken);
-        if (membership is { Status: MembershipStatus.Pending })
-            return Result<MyCourseDto>.Failure(ResultErrorType.Forbidden, "Your membership is waiting for approval.");
-        if (membership is { Status: MembershipStatus.Suspended })
-            return Result<MyCourseDto>.Failure(ResultErrorType.Forbidden, "Your membership in this organization is suspended.");
-
-        if (membership is null)
-        {
-            _platform.Memberships.Add(new Membership
-            {
-                OrganizationId = orgId,
-                UserId = userId,
-                Roles = OrganizationRole.Student,
-                Status = MembershipStatus.Active,
-                Source = MembershipSource.PublicEnrollment
-            });
-        }
-        else if (membership.Status == MembershipStatus.Left)
-        {
-            membership.Roles = OrganizationRole.Student;
-            membership.Status = MembershipStatus.Active;
-            membership.Source = MembershipSource.PublicEnrollment;
-            membership.JoinedAtUtc = DateTime.UtcNow;
-        }
-        else
-        {
-            membership.Roles |= OrganizationRole.Student;
-        }
+        var userId = learnerId;
+        if (await StudentMembershipWriter.EnsureAsync(_platform, orgId, userId, MembershipSource.PublicEnrollment, cancellationToken) is { } refused)
+            return Fail<MyCourseDto>(refused);
 
         var enrollment = await _platform.Enrollments.FirstOrDefaultAsync(e => e.UserId == userId && e.CourseId == courseId, cancellationToken);
         if (enrollment is not null && enrollment.IsUsable(DateTime.UtcNow))
@@ -294,7 +275,7 @@ public class LearningService : ILearningService
         await _platform.SaveChangesAsync(cancellationToken);
         _memberships.Invalidate(userId, orgId);
 
-        return Result<MyCourseDto>.Success((await GetMyCoursesAsync(cancellationToken)).First(c => c.CourseId == courseId));
+        return Result<MyCourseDto>.Success((await CoursesOfAsync(userId, cancellationToken)).First(c => c.CourseId == courseId));
     }
 
     public async Task<Result<IReadOnlyList<EnrollMemberResultDto>>> EnrollMembersAsync(Guid courseId, IReadOnlyList<string> userNames, CancellationToken cancellationToken)
@@ -368,13 +349,16 @@ public class LearningService : ILearningService
         return Result<IReadOnlyList<EnrollmentDto>>.Success(rows);
     }
 
-    public async Task<IReadOnlyList<MyCourseDto>> GetMyCoursesAsync(CancellationToken cancellationToken)
+    public Task<IReadOnlyList<MyCourseDto>> GetMyCoursesAsync(CancellationToken cancellationToken) =>
+        CoursesOfAsync(_currentUser.UserId, cancellationToken);
+
+    private async Task<IReadOnlyList<MyCourseDto>> CoursesOfAsync(Guid learnerId, CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
         var rows = await (
                 from e in _platform.Enrollments.AsNoTracking()
                 join o in _platform.Organizations.AsNoTracking() on e.OrganizationId equals o.Id
-                where e.UserId == _currentUser.UserId && e.Status == EnrollmentStatus.Active && o.Status == OrganizationStatus.Active
+                where e.UserId == learnerId && e.Status == EnrollmentStatus.Active && o.Status == OrganizationStatus.Active
                 orderby e.LastAccessedAtUtc ?? e.StartsAtUtc descending
                 select new { e, o.Slug, o.Name })
             .ToListAsync(cancellationToken);

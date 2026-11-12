@@ -13,6 +13,9 @@ public class ApplicationUser : IdentityUser<Guid>, ISoftDelete
     /// <summary>Needed for gender-separated classes (Saudi schools); optional elsewhere.</summary>
     public AqlamAcademy.Domain.Classes.Gender? Gender { get; set; }
 
+    /// <summary>Year only (data minimisation): enough for the age rules in <see cref="AqlamAcademy.Domain.Common.AgeRules"/>.</summary>
+    public int? BirthYear { get; set; }
+
     /// <summary>Set for accounts created by an administrator (e.g. bulk import) with a temporary password.</summary>
     public bool MustChangePassword { get; set; }
     
