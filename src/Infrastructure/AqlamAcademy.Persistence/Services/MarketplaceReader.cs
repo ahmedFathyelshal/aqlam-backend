@@ -19,7 +19,8 @@ public class MarketplaceReader(
     ApplicationDbContext platform,
     TenantStores tenants,
     ICurrentUserService currentUser,
-    PaymentProviders providers) : IMarketplaceReader
+    PaymentProviders providers,
+    Learners learners) : IMarketplaceReader
 {
     private const int MaxPageSize = 48;
 
@@ -194,7 +195,24 @@ public class MarketplaceReader(
             .Select(m => m.Roles).FirstOrDefaultAsync(cancellationToken);
         var pending = await platform.Payments.AsNoTracking().AnyAsync(p => p.UserId == me && p.CourseId == row.CourseId && p.Status == PaymentStatus.Pending, cancellationToken);
         var staff = (roles & ~(OrganizationRole.Student | OrganizationRole.Parent)) != OrganizationRole.None;
-        return new CourseViewerDto(true, enrollment?.IsUsable(now) == true, staff, pending);
+
+        // Linked children, so a parent can act for one of them.
+        var children = await (from l in platform.ParentLinks.AsNoTracking()
+                              join u in platform.Users.AsNoTracking() on l.ChildUserId equals u.Id
+                              where l.ParentUserId == me
+                              orderby u.FullName
+                              select new { u.Id, Name = u.FullName == "" ? u.UserName! : u.FullName }).ToListAsync(cancellationToken);
+        var childIds = children.Select(c => c.Id).ToList();
+        var childEnrollments = await platform.Enrollments.AsNoTracking()
+            .Where(e => childIds.Contains(e.UserId) && e.CourseId == row.CourseId).ToListAsync(cancellationToken);
+        var childPending = await platform.Payments.AsNoTracking()
+            .Where(p => childIds.Contains(p.UserId) && p.CourseId == row.CourseId && p.Status == PaymentStatus.Pending)
+            .Select(p => p.UserId).ToListAsync(cancellationToken);
+        var childRows = children.Select(c => new ViewerChildDto(c.Id, c.Name,
+            childEnrollments.Any(e => e.UserId == c.Id && e.IsUsable(now)), childPending.Contains(c.Id))).ToList();
+
+        return new CourseViewerDto(true, enrollment?.IsUsable(now) == true, staff, pending,
+            MustAskParent: !await learners.MayPayAsync(cancellationToken), Children: childRows);
     }
 
     private async Task<IReadOnlyList<CourseCardDto>> CardsAsync(IReadOnlyCollection<MarketplaceCourse> rows, CancellationToken cancellationToken)

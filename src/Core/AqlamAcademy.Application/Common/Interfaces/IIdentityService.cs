@@ -6,11 +6,14 @@ namespace AqlamAcademy.Application.Common.Interfaces;
 public interface IIdentityService
 {
     // Registration
+    /// <summary>Creates the user, role and profile. Birth year and full name are optional (students give a birth year).</summary>
     Task<Result<Guid>> CreateUserAsync(
         string userName,
         string email,
         string password, 
-        UserType userType);
+        UserType userType,
+        int? birthYear = null,
+        string? fullName = null);
         
     Task<bool> IsUserNameUniqueAsync(string userName);
 

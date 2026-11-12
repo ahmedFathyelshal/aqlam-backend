@@ -48,7 +48,9 @@ const users = new Map();
 async function user(userName, type) {
   if (users.has(userName)) return users.get(userName);
   const c = new Client(userName);
-  const reg = await c.req('POST', '/api/Auth/register', { userName, email: `${userName}@demo.aqlam.local`, password: PASSWORD, confirmPassword: PASSWORD, userType: type });
+  // Demo students are 15 (school age): they study and use codes, and a linked parent pays for them.
+  const birthYear = type === STUDENT ? new Date().getFullYear() - 15 : null;
+  const reg = await c.req('POST', '/api/Auth/register', { userName, email: `${userName}@demo.aqlam.local`, password: PASSWORD, confirmPassword: PASSWORD, userType: type, birthYear });
   if (reg.status >= 300 && reg.status !== 400 && reg.status !== 409) throw new Error(`register ${userName}: ${JSON.stringify(reg.body)}`);
   const login = await c.req('POST', '/api/Auth/login', { userName, password: PASSWORD });
   if (login.status !== 200) throw new Error(`login ${userName} failed (${login.status}). If the user exists with another password, delete it or rename the demo user.`);

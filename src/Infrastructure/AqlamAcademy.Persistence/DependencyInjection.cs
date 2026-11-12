@@ -75,6 +75,7 @@ public static class DependencyInjection
         services.AddScoped<ICourseService, CourseService>();
         services.AddScoped<IOrganizationPolicyReader, OrganizationPolicyReader>();
         services.AddScoped<LearnerAccess>();
+        services.AddScoped<Learners>();
         services.AddScoped<ClassEnrollmentSync>();
         services.AddScoped<GradeReader>();
         services.AddScoped<AqlamAcademy.Application.Features.Academics.IAcademicYearService, AcademicYearService>();

@@ -22,12 +22,21 @@ public class PaymentService(
     ICurrentOrganization currentOrganization,
     IMembershipService memberships,
     PaymentProviders providers,
+    Learners learners,
     ILogger<PaymentService> logger) : IPaymentService
 {
-    public async Task<Result<CheckoutDto>> CheckoutAsync(Guid courseId, CancellationToken cancellationToken)
+    public async Task<Result<CheckoutDto>> CheckoutAsync(Guid courseId, Guid? forUserId, CancellationToken cancellationToken)
     {
         if (currentOrganization.OrganizationId is not { } orgId)
             return Result<CheckoutDto>.NotFound("Organization not found.");
+
+        // A parent pays for a linked child; a student pays only when 18 or older (AgeRules).
+        var (learnerId, notLinked) = await learners.ResolveAsync(forUserId, cancellationToken);
+        if (notLinked is not null)
+            return Result<CheckoutDto>.Failure(notLinked.ErrorType, notLinked.Errors);
+        var payerId = currentUser.UserId;
+        if (learnerId == payerId && !await learners.MayPayAsync(cancellationToken))
+            return Result<CheckoutDto>.Failure(ResultErrorType.Forbidden, Learners.MinorMustAskParent);
         var org = await platform.Organizations.AsNoTracking().FirstAsync(o => o.Id == orgId, cancellationToken);
 
         var course = await tenant.Courses.AsNoTracking().FirstOrDefaultAsync(c => c.Id == courseId, cancellationToken);
@@ -44,7 +53,7 @@ public class PaymentService(
         if (provider is null)
             return Result<CheckoutDto>.Conflict("Online payment is not available yet.");
 
-        var userId = currentUser.UserId;
+        var userId = learnerId;
         var membership = await platform.Memberships.AsNoTracking().FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == userId, cancellationToken);
         if (membership is { Status: MembershipStatus.Pending or MembershipStatus.Suspended })
             return Result<CheckoutDto>.Failure(ResultErrorType.Forbidden, "Your membership in this organization does not allow new courses.");
@@ -68,6 +77,7 @@ public class PaymentService(
         var payment = new Payment
         {
             UserId = userId,
+            PaidByUserId = payerId == userId ? null : payerId,
             OrganizationId = orgId,
             CourseId = courseId,
             CourseTitle = course.Title,
@@ -99,7 +109,8 @@ public class PaymentService(
 
     public async Task<Result<PaymentStatusDto>> GetAsync(Guid paymentId, CancellationToken cancellationToken)
     {
-        var payment = await platform.Payments.AsNoTracking().FirstOrDefaultAsync(p => p.Id == paymentId && p.UserId == currentUser.UserId, cancellationToken);
+        var me = currentUser.UserId;
+        var payment = await platform.Payments.AsNoTracking().FirstOrDefaultAsync(p => p.Id == paymentId && (p.UserId == me || p.PaidByUserId == me), cancellationToken);
         return payment is null ? Result<PaymentStatusDto>.NotFound("Payment not found.") : Result<PaymentStatusDto>.Success(await ToDtoAsync(payment, cancellationToken));
     }
 
@@ -108,7 +119,7 @@ public class PaymentService(
         if (!providers.TestProviderEnabled)
             return Result<PaymentStatusDto>.NotFound("Payment not found.");
         var payment = await platform.Payments.AsNoTracking().FirstOrDefaultAsync(
-            p => p.Id == paymentId && p.UserId == currentUser.UserId && p.Provider == TestPaymentProvider.ProviderName, cancellationToken);
+            p => p.Id == paymentId && (p.PaidByUserId ?? p.UserId) == currentUser.UserId && p.Provider == TestPaymentProvider.ProviderName, cancellationToken);
         if (payment is null)
             return Result<PaymentStatusDto>.NotFound("Payment not found.");
         return await ApplyAsync(new ProviderEvent(payment.Provider, payment.ProviderReference, succeed, payment.Amount, payment.Currency, 0m,
@@ -204,6 +215,10 @@ public class PaymentService(
     {
         var orgSlug = await platform.Organizations.AsNoTracking().Where(o => o.Id == payment.OrganizationId).Select(o => o.Slug).FirstAsync(cancellationToken);
         var publicSlug = await platform.MarketplaceCourses.AsNoTracking().Where(c => c.CourseId == payment.CourseId).Select(c => c.PublicSlug).FirstOrDefaultAsync(cancellationToken);
-        return new PaymentStatusDto(payment.Id, payment.Status.ToString(), payment.CourseTitle, payment.Amount, payment.Currency, orgSlug, payment.CourseId, publicSlug, payment.FailureReason);
+        string? forName = null;
+        if (payment.PaidByUserId is not null)
+            forName = await platform.Users.AsNoTracking().Where(u => u.Id == payment.UserId)
+                .Select(u => u.FullName == "" ? u.UserName : u.FullName).FirstOrDefaultAsync(cancellationToken);
+        return new PaymentStatusDto(payment.Id, payment.Status.ToString(), payment.CourseTitle, payment.Amount, payment.Currency, orgSlug, payment.CourseId, publicSlug, payment.FailureReason, forName);
     }
 }

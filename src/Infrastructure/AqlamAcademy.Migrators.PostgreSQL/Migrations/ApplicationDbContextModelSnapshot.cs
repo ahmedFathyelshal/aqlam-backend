@@ -879,7 +879,7 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<DateTime>("ExpiresAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("OrganizationId")
+                    b.Property<Guid?>("OrganizationId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UsedAtUtc")
@@ -912,7 +912,7 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("OrganizationId")
+                    b.Property<Guid?>("OrganizationId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("ParentUserId")
@@ -1103,6 +1103,9 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PaidByUserId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Provider")
@@ -1398,6 +1401,9 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<int>("AccessFailedCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("BirthYear")
                         .HasColumnType("integer");
 
                     b.Property<string>("ConcurrencyStamp")
@@ -1856,8 +1862,7 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.HasOne("AqlamAcademy.Domain.Organizations.Organization", null)
                         .WithMany()
                         .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Organizations.ParentLink", b =>
@@ -1871,8 +1876,7 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.HasOne("AqlamAcademy.Domain.Organizations.Organization", null)
                         .WithMany()
                         .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("AqlamAcademy.Infrastructure.Persistence.Identity.ApplicationUser", null)
                         .WithMany()

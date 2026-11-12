@@ -48,6 +48,42 @@ public interface IParentService
     Task<Result<ChildDto>> RedeemInviteAsync(string code, CancellationToken cancellationToken);
     Task<IReadOnlyList<ChildDto>> MyChildrenAsync(CancellationToken cancellationToken);
     Task<Result<ChildOverviewDto>> ChildOverviewAsync(Guid childUserId, CancellationToken cancellationToken);
+
+    // Families outside schools (marketplace)
+    Task<Result<ParentInviteDto>> CreateFamilyInviteAsync(CancellationToken cancellationToken);
+    Task<Result<ChildDto>> CreateChildAccountAsync(CreateChildAccountCommand command, CancellationToken cancellationToken);
+    Task<bool> IsMyChildAsync(Guid childUserId, CancellationToken cancellationToken);
+}
+
+/// <summary>A student asks a parent to join: the code is entered in the parent's "My children".</summary>
+public record CreateFamilyInviteCommand : IRequest<Result<ParentInviteDto>>;
+
+public class CreateFamilyInviteCommandHandler(IParentService parents) : IRequestHandler<CreateFamilyInviteCommand, Result<ParentInviteDto>>
+{
+    public Task<Result<ParentInviteDto>> Handle(CreateFamilyInviteCommand request, CancellationToken cancellationToken) =>
+        parents.CreateFamilyInviteAsync(cancellationToken);
+}
+
+/// <summary>A parent creates a child's account (the way in for children under 13) and is linked to it.</summary>
+public record CreateChildAccountCommand(string UserName, string Password, string? FullName, int BirthYear) : IRequest<Result<ChildDto>>;
+
+public class CreateChildAccountCommandValidator : AbstractValidator<CreateChildAccountCommand>
+{
+    public CreateChildAccountCommandValidator(Common.Interfaces.IIdentityService identity)
+    {
+        RuleFor(x => x.UserName).NotEmpty().MaximumLength(64)
+            .MustAsync(async (name, _) => await identity.IsUserNameUniqueAsync(name.Trim())).WithMessage("This username is taken.");
+        RuleFor(x => x.Password).NotEmpty().MinimumLength(8);
+        RuleFor(x => x.FullName).MaximumLength(100);
+        RuleFor(x => x.BirthYear).Must(y => Domain.Common.AgeRules.IsValidBirthYear(y, DateTime.UtcNow)
+            && Domain.Common.AgeRules.Age(y, DateTime.UtcNow) < Domain.Common.AgeRules.AdultAge).WithMessage("Enter the child's birth year.");
+    }
+}
+
+public class CreateChildAccountCommandHandler(IParentService parents) : IRequestHandler<CreateChildAccountCommand, Result<ChildDto>>
+{
+    public Task<Result<ChildDto>> Handle(CreateChildAccountCommand request, CancellationToken cancellationToken) =>
+        parents.CreateChildAccountAsync(request, cancellationToken);
 }
 
 public record ListParentsQuery(Guid ChildUserId) : IRequest<Result<IReadOnlyList<ParentDto>>>;

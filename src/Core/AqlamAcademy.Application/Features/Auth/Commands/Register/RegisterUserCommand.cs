@@ -9,10 +9,12 @@ namespace AqlamAcademy.Application.Features.Auth.Commands.Register;
 public record RegisterUserCommand : IRequest<Result<RegisterResult>>
 {
     public string UserName { get; init; } = string.Empty;
-    public string Email { get; init; } = string.Empty;
+    public string? Email { get; init; }
     public string Password { get; init; } = string.Empty;
     public string ConfirmPassword { get; init; } = string.Empty;
     public UserType UserType { get; init; }
+    /// <summary>Required for students: under 13 a parent creates the account.</summary>
+    public int? BirthYear { get; init; }
 }
 
 public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, Result<RegisterResult>>
@@ -37,9 +39,10 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         // 1. Create User and Profile via IdentityService
         var result = await _identityService.CreateUserAsync(
             request.UserName,
-            request.Email,
+            request.Email ?? string.Empty,
             request.Password,
-            request.UserType);
+            request.UserType,
+            request.UserType == UserType.Student ? request.BirthYear : null);
 
         if (!result.Succeeded)
         {

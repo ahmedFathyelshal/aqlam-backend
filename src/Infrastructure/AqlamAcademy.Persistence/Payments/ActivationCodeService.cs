@@ -65,6 +65,7 @@ public class ActivationCodeService(
     ICurrentOrganization currentOrganization,
     IMembershipService memberships,
     CodeHashKey hashKey,
+    Learners learners,
     IMemoryCache cache) : IActivationCodeService
 {
     private const int MaxFailures = 5;
@@ -148,10 +149,13 @@ public class ActivationCodeService(
         return Result<CodeLookupDto>.Success(new CodeLookupDto(StatusOf(found, DateTime.UtcNow), found.LastFour, found.BatchId, found.Batch.Name, userName, found.RedeemedAtUtc));
     }
 
-    public async Task<Result<RedeemedDto>> RedeemAsync(string code, Guid? courseId, CancellationToken cancellationToken)
+    public async Task<Result<RedeemedDto>> RedeemAsync(string code, Guid? courseId, Guid? forUserId, CancellationToken cancellationToken)
     {
-        var userId = currentUser.UserId;
-        var failureKey = $"code-failures:{userId}";
+        // Wrong guesses count against the person typing; the course goes to the learner (a parent's linked child).
+        var failureKey = $"code-failures:{currentUser.UserId}";
+        var (userId, notLinked) = await learners.ResolveAsync(forUserId, cancellationToken);
+        if (notLinked is not null)
+            return Result<RedeemedDto>.Failure(notLinked.ErrorType, notLinked.Errors);
         if (cache.TryGetValue(failureKey, out Failures? failures) && failures!.Count >= MaxFailures)
             return Result<RedeemedDto>.Failure(ResultErrorType.TooManyRequests, "Too many wrong codes. Try again in 10 minutes.");
 

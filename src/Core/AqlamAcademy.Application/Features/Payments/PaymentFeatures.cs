@@ -9,7 +9,9 @@ namespace AqlamAcademy.Application.Features.Payments;
 
 public record CheckoutDto(Guid PaymentId, string Status, string RedirectUrl, decimal Amount, string Currency);
 
-public record PaymentStatusDto(Guid PaymentId, string Status, string CourseTitle, decimal Amount, string Currency, string OrganizationSlug, Guid CourseId, string? CoursePublicSlug, string? FailureReason);
+public record PaymentStatusDto(Guid PaymentId, string Status, string CourseTitle, decimal Amount, string Currency, string OrganizationSlug, Guid CourseId, string? CoursePublicSlug, string? FailureReason,
+    /// <summary>Set when a parent paid for a child: the child's name.</summary>
+    string? ForStudentName = null);
 
 /// <summary>What a payment provider tells us about a payment, after its signature was checked.</summary>
 public record ProviderEvent(string Provider, string ProviderReference, bool Succeeded, decimal? Amount, string? Currency, decimal ProviderFee, string? FailureReason);
@@ -17,7 +19,7 @@ public record ProviderEvent(string Provider, string ProviderReference, bool Succ
 public interface IPaymentService
 {
     /// <summary>Starts (or resumes) checkout for the signed-in student in the current organization.</summary>
-    Task<Result<CheckoutDto>> CheckoutAsync(Guid courseId, CancellationToken cancellationToken);
+    Task<Result<CheckoutDto>> CheckoutAsync(Guid courseId, Guid? forUserId, CancellationToken cancellationToken);
     Task<Result<PaymentStatusDto>> GetAsync(Guid paymentId, CancellationToken cancellationToken);
     /// <summary>Applies a provider notification. Safe to call any number of times for the same payment.</summary>
     Task<Result<PaymentStatusDto>> ApplyAsync(ProviderEvent providerEvent, CancellationToken cancellationToken);
@@ -25,12 +27,13 @@ public interface IPaymentService
     Task<Result<PaymentStatusDto>> CompleteTestPaymentAsync(Guid paymentId, bool succeed, CancellationToken cancellationToken);
 }
 
-public record CheckoutCommand(Guid CourseId) : IRequest<Result<CheckoutDto>>;
+/// <summary>Buy a course; a parent passes the linked child's id.</summary>
+public record CheckoutCommand(Guid CourseId, Guid? ForUserId = null) : IRequest<Result<CheckoutDto>>;
 
 public class CheckoutCommandHandler(IPaymentService payments) : IRequestHandler<CheckoutCommand, Result<CheckoutDto>>
 {
     public Task<Result<CheckoutDto>> Handle(CheckoutCommand request, CancellationToken cancellationToken) =>
-        payments.CheckoutAsync(request.CourseId, cancellationToken);
+        payments.CheckoutAsync(request.CourseId, request.ForUserId, cancellationToken);
 }
 
 // ---------- Earnings and the monthly fee ----------
@@ -76,7 +79,7 @@ public interface IActivationCodeService
     Task<Result<IReadOnlyList<CodeBatchDto>>> ListBatchesAsync(Guid courseId, CancellationToken cancellationToken);
     Task<Result<CodeBatchDto>> CancelBatchAsync(Guid courseId, Guid batchId, CancellationToken cancellationToken);
     Task<Result<CodeLookupDto>> LookupAsync(Guid courseId, string code, CancellationToken cancellationToken);
-    Task<Result<RedeemedDto>> RedeemAsync(string code, Guid? courseId, CancellationToken cancellationToken);
+    Task<Result<RedeemedDto>> RedeemAsync(string code, Guid? courseId, Guid? forUserId, CancellationToken cancellationToken);
 }
 
 public record CreateCodeBatchCommand(Guid CourseId, string Name, int Quantity, DateTime? ExpiresAtUtc) : IRequest<Result<CreatedCodeBatchDto>>;
@@ -98,7 +101,7 @@ public class CreateCodeBatchCommandHandler(IActivationCodeService codes) : IRequ
         codes.CreateBatchAsync(request.CourseId, request.Name.Trim(), request.Quantity, request.ExpiresAtUtc, cancellationToken);
 }
 
-public record RedeemCodeCommand(string Code, Guid? CourseId) : IRequest<Result<RedeemedDto>>;
+public record RedeemCodeCommand(string Code, Guid? CourseId, Guid? ForUserId = null) : IRequest<Result<RedeemedDto>>;
 
 public class RedeemCodeCommandValidator : AbstractValidator<RedeemCodeCommand>
 {
@@ -111,5 +114,5 @@ public class RedeemCodeCommandValidator : AbstractValidator<RedeemCodeCommand>
 public class RedeemCodeCommandHandler(IActivationCodeService codes) : IRequestHandler<RedeemCodeCommand, Result<RedeemedDto>>
 {
     public Task<Result<RedeemedDto>> Handle(RedeemCodeCommand request, CancellationToken cancellationToken) =>
-        codes.RedeemAsync(request.Code, request.CourseId, cancellationToken);
+        codes.RedeemAsync(request.Code, request.CourseId, request.ForUserId, cancellationToken);
 }

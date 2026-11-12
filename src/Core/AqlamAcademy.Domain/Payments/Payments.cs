@@ -16,7 +16,10 @@ public enum PaymentStatus
 public class Payment
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+    /// <summary>The student who gets the course.</summary>
     public Guid UserId { get; set; }
+    /// <summary>A linked parent who paid for the student; null when the student paid.</summary>
+    public Guid? PaidByUserId { get; set; }
     public Guid OrganizationId { get; set; }
     public Guid CourseId { get; set; }
     public string CourseTitle { get; set; } = string.Empty;

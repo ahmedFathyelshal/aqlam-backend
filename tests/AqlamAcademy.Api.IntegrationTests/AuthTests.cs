@@ -50,7 +50,7 @@ public class AuthTests(ApiFactory factory)
         var client = factory.CreateClient(new() { HandleCookies = false });
         var userName = $"tabs{Guid.NewGuid():N}"[..20];
         const string password = "Passw0rd!x";
-        (await client.PostAsJsonAsync("/api/Auth/register", new { userName, email = $"{userName}@test.local", password, confirmPassword = password, userType = TestUsers.Student }))
+        (await client.PostAsJsonAsync("/api/Auth/register", new { userName, email = $"{userName}@test.local", password, confirmPassword = password, userType = TestUsers.Student, birthYear = TestUsers.AdultBirthYear }))
             .EnsureSuccessStatusCode();
         var login = await client.PostAsJsonAsync("/api/Auth/login", new { userName, password });
         var loginCookies = ReadSetCookies(login);

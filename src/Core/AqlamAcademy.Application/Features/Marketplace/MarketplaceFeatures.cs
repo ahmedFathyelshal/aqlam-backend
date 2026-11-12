@@ -68,7 +68,17 @@ public record TeacherPageDto(TeacherCardDto Teacher, string? Bio, IReadOnlyList<
 public record OutlineLessonDto(Guid Id, string Title, string Type, int? DurationInMinutes, bool IsFreePreview);
 public record OutlineChapterDto(string Title, IReadOnlyList<OutlineLessonDto> Lessons);
 
-public record CourseViewerDto(bool SignedIn, bool Enrolled, bool IsStaff, bool HasPendingPayment);
+/// <summary>A linked child, for a parent who joins, buys or uses a code on the child's behalf.</summary>
+public record ViewerChildDto(Guid UserId, string Name, bool Enrolled, bool HasPendingPayment);
+
+public record CourseViewerDto(
+    bool SignedIn,
+    bool Enrolled,
+    bool IsStaff,
+    bool HasPendingPayment,
+    /// <summary>A student under 18 (or with no birth year) cannot pay: a linked parent buys for them.</summary>
+    bool MustAskParent = false,
+    IReadOnlyList<ViewerChildDto>? Children = null);
 
 public record CoursePageDto(
     CourseCardDto Course,

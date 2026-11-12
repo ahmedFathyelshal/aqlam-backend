@@ -10,8 +10,11 @@ public static class TestUsers
     public const int Parent = 4;
     public const string Password = "Passw0rd!x";
 
+    /// <summary>An adult by default, so students can pay for themselves unless a test says otherwise.</summary>
+    public const int AdultBirthYear = 2000;
+
     /// <summary>Registers a unique user and logs the client in (auth cookies are kept by the client).</summary>
-    public static async Task<JsonElement> RegisterAndLoginAsync(HttpClient client, int userType, string prefix)
+    public static async Task<JsonElement> RegisterAndLoginAsync(HttpClient client, int userType, string prefix, int? birthYear = AdultBirthYear)
     {
         var userName = $"{prefix}{Guid.NewGuid():N}"[..20];
         const string password = Password;
@@ -22,7 +25,8 @@ public static class TestUsers
             email = $"{userName}@test.local",
             password,
             confirmPassword = password,
-            userType
+            userType,
+            birthYear = userType == Student ? birthYear : null
         });
         register.EnsureSuccessStatusCode();
 

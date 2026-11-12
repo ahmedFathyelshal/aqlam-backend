@@ -29,10 +29,12 @@ public class ParentService : IParentService
     private readonly ICurrentOrganization _currentOrganization;
     private readonly IMembershipService _memberships;
     private readonly IAttendanceService _attendance;
+    private readonly IIdentityService _identity;
 
     public ParentService(ApplicationDbContext platform, TenantDbContext tenant, ICurrentUserService currentUser,
-        ICurrentOrganization currentOrganization, IMembershipService memberships, IAttendanceService attendance)
+        ICurrentOrganization currentOrganization, IMembershipService memberships, IAttendanceService attendance, IIdentityService identity)
     {
+        _identity = identity;
         _platform = platform;
         _tenant = tenant;
         _currentUser = currentUser;
@@ -137,7 +139,7 @@ public class ParentService : IParentService
         var invite = await _platform.ParentInvites.FirstOrDefaultAsync(i => i.Code == normalized, cancellationToken);
         if (invite is null || invite.UsedAtUtc is not null || invite.ExpiresAtUtc < DateTime.UtcNow)
             return Result<ChildDto>.NotFound("This code is not valid or has expired. Ask the school for a new one.");
-        if (!await IsStudentAsync(invite.ChildUserId, invite.OrganizationId, cancellationToken))
+        if (invite.OrganizationId is { } inviteOrg && !await IsStudentAsync(invite.ChildUserId, inviteOrg, cancellationToken))
             return Result<ChildDto>.NotFound("This code is not valid or has expired. Ask the school for a new one.");
 
         var parentId = _currentUser.UserId;
@@ -150,6 +152,46 @@ public class ParentService : IParentService
 
         return Result<ChildDto>.Success((await MyChildrenAsync(cancellationToken)).First(c => c.UserId == invite.ChildUserId));
     }
+
+    /// <summary>A student's own family code, for a parent who will pay or follow them outside any school.</summary>
+    public async Task<Result<ParentInviteDto>> CreateFamilyInviteAsync(CancellationToken cancellationToken)
+    {
+        var childId = _currentUser.UserId;
+        if (await _platform.ParentLinks.CountAsync(l => l.ChildUserId == childId, cancellationToken) >= ParentLink.MaxParentsPerChild)
+            return Result<ParentInviteDto>.Conflict($"You already have {ParentLink.MaxParentsPerChild} parents linked.");
+
+        // One open family code at a time: asking again shows the same one.
+        var open = await _platform.ParentInvites.FirstOrDefaultAsync(i => i.ChildUserId == childId && i.OrganizationId == null
+            && i.UsedAtUtc == null && i.ExpiresAtUtc > DateTime.UtcNow, cancellationToken);
+        if (open is null)
+        {
+            open = new ParentInvite { ChildUserId = childId, ExpiresAtUtc = DateTime.UtcNow.Add(InviteLifetime) };
+            do open.Code = RandomNumberGenerator.GetString(CodeAlphabet, CodeLength);
+            while (await _platform.ParentInvites.AnyAsync(i => i.Code == open.Code, cancellationToken));
+            _platform.ParentInvites.Add(open);
+            await _platform.SaveChangesAsync(cancellationToken);
+        }
+
+        var name = await _platform.Users.Where(u => u.Id == childId).Select(u => u.FullName == "" ? u.UserName! : u.FullName).FirstAsync(cancellationToken);
+        return Result<ParentInviteDto>.Success(new ParentInviteDto(open.Code, name, open.ExpiresAtUtc));
+    }
+
+    /// <summary>A parent creates the account of a child (required under 13) and is linked to it at once.</summary>
+    public async Task<Result<ChildDto>> CreateChildAccountAsync(CreateChildAccountCommand command, CancellationToken cancellationToken)
+    {
+        var parentId = _currentUser.UserId;
+        var created = await _identity.CreateUserAsync(command.UserName.Trim(), string.Empty, command.Password, Domain.Enums.UserType.Student,
+            command.BirthYear, command.FullName?.Trim());
+        if (!created.Succeeded)
+            return Result<ChildDto>.Failure(created.Errors);
+
+        await CreateLinkAsync(parentId, created.Data, null, cancellationToken);
+        return Result<ChildDto>.Success((await MyChildrenAsync(cancellationToken)).First(c => c.UserId == created.Data));
+    }
+
+    /// <summary>The child is linked to the signed-in parent.</summary>
+    public Task<bool> IsMyChildAsync(Guid childUserId, CancellationToken cancellationToken) =>
+        _platform.ParentLinks.AnyAsync(l => l.ParentUserId == _currentUser.UserId && l.ChildUserId == childUserId, cancellationToken);
 
     public async Task<IReadOnlyList<ChildDto>> MyChildrenAsync(CancellationToken cancellationToken)
     {
@@ -285,11 +327,19 @@ public class ParentService : IParentService
         return null;
     }
 
-    /// <summary>Creates the link and makes sure the parent is an active Parent member of the organization.</summary>
-    private async Task<ParentLink> CreateLinkAsync(Guid parentId, Guid childId, Guid orgId, CancellationToken cancellationToken)
+    /// <summary>
+    /// Creates the link and, when an organization verified it, makes sure the parent is an active Parent member there.
+    /// A family link without an organization gives no school access: the school links parents itself.
+    /// </summary>
+    private async Task<ParentLink> CreateLinkAsync(Guid parentId, Guid childId, Guid? organizationId, CancellationToken cancellationToken)
     {
-        var link = new ParentLink { ParentUserId = parentId, ChildUserId = childId, OrganizationId = orgId };
+        var link = new ParentLink { ParentUserId = parentId, ChildUserId = childId, OrganizationId = organizationId };
         _platform.ParentLinks.Add(link);
+        if (organizationId is not { } orgId)
+        {
+            await _platform.SaveChangesAsync(cancellationToken);
+            return link;
+        }
 
         var membership = await _platform.Memberships.FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == parentId, cancellationToken);
         if (membership is null)
