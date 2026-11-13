@@ -89,6 +89,17 @@ public class MeController : ControllerBase
     public async Task<IActionResult> FamilyInvite(CancellationToken cancellationToken) =>
         ToActionResult(await _mediator.Send(new CreateFamilyInviteCommand(), cancellationToken));
 
+    public record BirthYearRequest(int BirthYear);
+
+    /// <summary>Adds the birth year to an account that has none (accounts made before the age rules). Set once.</summary>
+    [HttpPut("birth-year")]
+    public async Task<IActionResult> SetBirthYear([FromBody] BirthYearRequest request, [FromServices] IIdentityService identity, [FromServices] ICurrentUserService currentUser)
+    {
+        if (!Domain.Common.AgeRules.IsValidBirthYear(request.BirthYear, DateTime.UtcNow))
+            return BadRequest(Result.Failure(["Enter a valid birth year."]));
+        return ToActionResult(await identity.SetBirthYearOnceAsync(currentUser.UserId, request.BirthYear));
+    }
+
     private IActionResult ToActionResult(Result result) =>
         result.Succeeded ? Ok(result) : this.ToFailureResult(result);
 }

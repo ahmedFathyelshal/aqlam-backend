@@ -17,6 +17,9 @@ public interface IIdentityService
         
     Task<bool> IsUserNameUniqueAsync(string userName);
 
+    /// <summary>Sets the birth year of an account that has none. Once set, only support changes it.</summary>
+    Task<Result> SetBirthYearOnceAsync(Guid userId, int birthYear);
+
     // Login
     Task<Result<AuthTokens>> LoginAsync(string userName, string password, string? ipAddress, string? userAgent, string? deviceId, string? hostTenantId);
     

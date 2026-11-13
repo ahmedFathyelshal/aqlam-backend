@@ -78,7 +78,9 @@ public record CourseViewerDto(
     bool HasPendingPayment,
     /// <summary>A student under 18 (or with no birth year) cannot pay: a linked parent buys for them.</summary>
     bool MustAskParent = false,
-    IReadOnlyList<ViewerChildDto>? Children = null);
+    IReadOnlyList<ViewerChildDto>? Children = null,
+    /// <summary>The account has no birth year (made before the age rules): an adult can add it once to buy.</summary>
+    bool BirthYearMissing = false);
 
 public record CoursePageDto(
     CourseCardDto Course,

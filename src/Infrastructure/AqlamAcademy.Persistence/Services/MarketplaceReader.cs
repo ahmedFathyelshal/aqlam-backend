@@ -211,8 +211,9 @@ public class MarketplaceReader(
         var childRows = children.Select(c => new ViewerChildDto(c.Id, c.Name,
             childEnrollments.Any(e => e.UserId == c.Id && e.IsUsable(now)), childPending.Contains(c.Id))).ToList();
 
+        var birthYearMissing = await platform.Users.AsNoTracking().Where(u => u.Id == me).Select(u => u.BirthYear == null).FirstOrDefaultAsync(cancellationToken);
         return new CourseViewerDto(true, enrollment?.IsUsable(now) == true, staff, pending,
-            MustAskParent: !await learners.MayPayAsync(cancellationToken), Children: childRows);
+            MustAskParent: !await learners.MayPayAsync(cancellationToken), Children: childRows, BirthYearMissing: birthYearMissing);
     }
 
     private async Task<IReadOnlyList<CourseCardDto>> CardsAsync(IReadOnlyCollection<MarketplaceCourse> rows, CancellationToken cancellationToken)

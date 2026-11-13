@@ -106,6 +106,40 @@ public class FamilyMarketplaceTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.Forbidden, (await stranger.PostAsync($"/api/orgs/{org}/learn/courses/{codeCourse}/checkout?forUserId={childId}", null)).StatusCode);
     }
 
+    [Fact]
+    public async Task An_adult_without_a_birth_year_adds_it_once_and_can_then_buy()
+    {
+        var (teacher, org) = await TeacherWithPersonalOrgAsync(factory, "famb");
+        var courseId = await PaidCourseAsync(teacher, org);
+        var slug = await SlugAsync(courseId);
+
+        // An account from before the age rules: a student with no birth year counts as a minor.
+        var student = factory.CreateBrowserClient();
+        await TestUsers.RegisterAndLoginAsync(student, TestUsers.Student, "old");
+        var studentId = Guid.Parse(await IdAsync(student));
+        using (var scope = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope(factory.Services))
+        {
+            var db = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions
+                .GetRequiredService<global::AqlamAcademy.Infrastructure.Persistence.ApplicationDbContext>(scope.ServiceProvider);
+            var user = await db.Users.FindAsync(studentId);
+            user!.BirthYear = null;
+            await db.SaveChangesAsync();
+        }
+
+        var viewer = (await Data(await student.GetAsync($"/api/marketplace/courses/{slug}"))).GetProperty("viewer");
+        Assert.True(viewer.GetProperty("birthYearMissing").GetBoolean());
+        Assert.True(viewer.GetProperty("mustAskParent").GetBoolean());
+        Assert.Equal(HttpStatusCode.Forbidden, (await student.PostAsync($"/api/orgs/{org}/learn/courses/{courseId}/checkout", null)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await student.PutAsJsonAsync("/api/me/birth-year", new { birthYear = ThisYear + 1 })).StatusCode);
+        (await student.PutAsJsonAsync("/api/me/birth-year", new { birthYear = ThisYear - 30 })).EnsureSuccessStatusCode();
+        // Set once: a second change goes through support (so a teenager cannot "become" 18).
+        Assert.Equal(HttpStatusCode.Conflict, (await student.PutAsJsonAsync("/api/me/birth-year", new { birthYear = ThisYear - 40 })).StatusCode);
+
+        Assert.False((await Data(await student.GetAsync($"/api/marketplace/courses/{slug}"))).GetProperty("viewer").GetProperty("mustAskParent").GetBoolean());
+        Assert.Equal(HttpStatusCode.OK, (await student.PostAsync($"/api/orgs/{org}/learn/courses/{courseId}/checkout", null)).StatusCode);
+    }
+
     private Task<HttpResponseMessage> Register(string prefix, int userType, int? birthYear)
     {
         var userName = $"{prefix}{Guid.NewGuid():N}"[..16];
