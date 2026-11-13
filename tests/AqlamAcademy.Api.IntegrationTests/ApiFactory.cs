@@ -30,6 +30,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         Environment.SetEnvironmentVariable("DatabaseSettings__ConnectionString", _db.GetConnectionString());
         Environment.SetEnvironmentVariable("JwtSettings__Rsa__PrivateKeyXml", rsa.ToXmlString(includePrivateParameters: true));
         Environment.SetEnvironmentVariable("RateLimiting__AuthPermitsPerMinute", "1000");
+        Environment.SetEnvironmentVariable("RateLimiting__PublicPermitsPerMinute", "100000");
         Environment.SetEnvironmentVariable("Platform__BootstrapAdmin__UserName", PlatformAdminUserName);
         Environment.SetEnvironmentVariable("Platform__BootstrapAdmin__Password", PlatformAdminPassword);
         Environment.SetEnvironmentVariable("JwtSettings__Rsa__PublicKeyXml", rsa.ToXmlString(includePrivateParameters: false));

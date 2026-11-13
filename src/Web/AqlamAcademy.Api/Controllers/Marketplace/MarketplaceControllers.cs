@@ -17,6 +17,7 @@ namespace AqlamAcademy.Api.Controllers.Marketplace;
 [ApiController]
 [Route("api/marketplace")]
 [AllowAnonymous]
+[Microsoft.AspNetCore.RateLimiting.EnableRateLimiting(Infrastructure.DependencyInjection.PresentationDependencyInjection.PublicReadRateLimitPolicy)]
 public class MarketplaceController(IMarketplaceReader reader) : ControllerBase
 {
     [HttpGet("courses")]
