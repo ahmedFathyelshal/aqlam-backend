@@ -34,6 +34,19 @@ public class IdentityService : IIdentityService
         _personalOrganizations = personalOrganizations;
     }
 
+    public async Task<Result> SetBirthYearOnceAsync(Guid userId, int birthYear)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return Result<object>.NotFound("User not found.");
+        // A teenager must not be able to "become" 18 to pay: the year is set once, then only support changes it.
+        if (user.BirthYear is not null)
+            return Result<object>.Conflict("Your birth year is already set. Contact support to correct it.");
+        user.BirthYear = birthYear;
+        var updated = await _userManager.UpdateAsync(user);
+        return updated.Succeeded ? Result.Success() : Result.Failure(updated.Errors.Select(e => e.Description));
+    }
+
     public async Task<bool> IsUserNameUniqueAsync(string userName)
     {
         return await _userManager.FindByNameAsync(userName) == null;

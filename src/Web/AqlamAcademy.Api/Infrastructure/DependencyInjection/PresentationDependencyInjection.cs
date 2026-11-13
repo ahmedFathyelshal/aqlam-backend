@@ -28,6 +28,7 @@ public static class PresentationDependencyInjection
 {
     private const string CorsPolicy = "AqlamCorsPolicy";
     public const string AuthRateLimitPolicy = "AuthRateLimit";
+    public const string PublicReadRateLimitPolicy = "PublicRead";
 
     public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration)
     {
@@ -131,6 +132,7 @@ public static class PresentationDependencyInjection
 
         // 5. Rate limiting: slow down credential stuffing on login/register (per client IP)
         var authPermitsPerMinute = configuration.GetValue("RateLimiting:AuthPermitsPerMinute", 10);
+        var publicPermitsPerMinute = configuration.GetValue("RateLimiting:PublicPermitsPerMinute", 120);
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -141,6 +143,19 @@ public static class PresentationDependencyInjection
                     {
                         PermitLimit = authPermitsPerMinute,
                         Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    }));
+
+            // Public marketplace reads (no sign-in): generous for people, but stops copying the whole teacher list.
+            // A sliding window so a burst at a minute's edge cannot double the rate.
+            options.AddPolicy(PublicReadRateLimitPolicy, httpContext =>
+                RateLimitPartition.GetSlidingWindowLimiter(
+                    httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new SlidingWindowRateLimiterOptions
+                    {
+                        PermitLimit = publicPermitsPerMinute,
+                        Window = TimeSpan.FromMinutes(1),
+                        SegmentsPerWindow = 6,
                         QueueLimit = 0
                     }));
         });
