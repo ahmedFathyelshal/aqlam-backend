@@ -112,8 +112,15 @@ public class PublicProfileController(IPublicProfileService profiles, ISender med
 [ApiController]
 [Route("api/platform/marketplace")]
 [Authorize(Roles = PlatformRoles.SuperAdmin)]
-public class PlatformMarketplaceController(IPlatformMarketplaceService service, ISender mediator) : ControllerBase
+public class PlatformMarketplaceController(IPlatformMarketplaceService service, ISender mediator, AqlamAcademy.Application.Common.Interfaces.IAuditLog audit, AqlamAcademy.Application.Common.Interfaces.ICurrentUserService me) : ControllerBase
 {
+    private async Task<IActionResult> Audited(Result result, string action, string details, CancellationToken cancellationToken)
+    {
+        if (result.Succeeded)
+            await audit.WriteAsync(action, me.UserId, null, null, details, cancellationToken);
+        return ToActionResult(result);
+    }
+
     [HttpGet("featured")]
     public async Task<IActionResult> Featured(CancellationToken cancellationToken) =>
         Ok(Result<IReadOnlyList<FeaturedTeacherDto>>.Success(await service.ListFeaturedAsync(cancellationToken)));
@@ -125,11 +132,11 @@ public class PlatformMarketplaceController(IPlatformMarketplaceService service, 
 
     [HttpPost("featured")]
     public async Task<IActionResult> Feature([FromBody] FeatureTeacherCommand command, CancellationToken cancellationToken) =>
-        ToActionResult(await mediator.Send(command, cancellationToken));
+        await Audited(await mediator.Send(command, cancellationToken), "marketplace.featured.added", $"Teacher {command.Slug}, subject {command.SubjectId}, order {command.Order}.", cancellationToken);
 
     [HttpDelete("featured/{id:guid}")]
     public async Task<IActionResult> Unfeature(Guid id, CancellationToken cancellationToken) =>
-        ToActionResult(await service.UnfeatureAsync(id, cancellationToken));
+        await Audited(await service.UnfeatureAsync(id, cancellationToken), "marketplace.featured.removed", $"Featured entry {id}.", cancellationToken);
 
     [HttpGet("fees")]
     public async Task<IActionResult> Fees(CancellationToken cancellationToken) =>
@@ -137,14 +144,14 @@ public class PlatformMarketplaceController(IPlatformMarketplaceService service, 
 
     [HttpPut("fees")]
     public async Task<IActionResult> SaveFees([FromBody] SaveFeesCommand command, CancellationToken cancellationToken) =>
-        ToActionResult(await mediator.Send(command, cancellationToken));
+        await Audited(await mediator.Send(command, cancellationToken), "fees.changed", $"Commission {command.CommissionPercent}%, monthly fee SAR {command.MonthlyStudentFeeSar}, EGP {command.MonthlyStudentFeeEgp}.", cancellationToken);
 
     public record CommissionRequest(decimal? CommissionPercent);
 
     /// <summary>Commission agreed with one organization; null goes back to the platform rate.</summary>
     [HttpPut("organizations/{slug}/commission")]
     public async Task<IActionResult> Commission(string slug, [FromBody] CommissionRequest request, CancellationToken cancellationToken) =>
-        ToActionResult(await mediator.Send(new SetCommissionCommand(slug, request.CommissionPercent), cancellationToken));
+        await Audited(await mediator.Send(new SetCommissionCommand(slug, request.CommissionPercent), cancellationToken), "fees.commission.changed", $"Organization {slug}: commission {request.CommissionPercent?.ToString() ?? "platform rate"}.", cancellationToken);
 
     private IActionResult ToActionResult(Result result) => result.Succeeded ? Ok(result) : this.ToFailureResult(result);
 }

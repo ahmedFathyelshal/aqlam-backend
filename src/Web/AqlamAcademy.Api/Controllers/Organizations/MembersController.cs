@@ -15,10 +15,23 @@ namespace AqlamAcademy.Api.Controllers.Organizations;
 public class MembersController : ControllerBase
 {
     private readonly ISender _mediator;
+    private readonly IAuditLog _audit;
+    private readonly ICurrentUserService _me;
+    private readonly ICurrentOrganization _organization;
 
-    public MembersController(ISender mediator)
+    public MembersController(ISender mediator, IAuditLog audit, ICurrentUserService me, ICurrentOrganization organization)
     {
         _mediator = mediator;
+        _audit = audit;
+        _me = me;
+        _organization = organization;
+    }
+
+    private async Task<IActionResult> Audited(Application.Common.Models.Result result, string action, Guid target, string details, CancellationToken cancellationToken)
+    {
+        if (result.Succeeded)
+            await _audit.WriteAsync(action, _me.UserId, target, _organization.OrganizationId, details, cancellationToken);
+        return ToActionResult(result);
     }
 
     [HttpGet]
@@ -53,7 +66,7 @@ public class MembersController : ControllerBase
     [HttpPut("{userId:guid}/roles")]
     [HasPermission(Permissions.MembersManage)]
     public async Task<IActionResult> UpdateRoles(Guid userId, [FromBody] UpdateRolesRequest request, CancellationToken cancellationToken) =>
-        ToActionResult(await _mediator.Send(new UpdateMemberRolesCommand(userId, request.Roles), cancellationToken));
+        await Audited(await _mediator.Send(new UpdateMemberRolesCommand(userId, request.Roles), cancellationToken), "member.roles.changed", userId, $"Roles set to {string.Join(", ", request.Roles)}.", cancellationToken);
 
     [HttpPut("{userId:guid}/gender")]
     [HasPermission(Permissions.MembersManage)]
@@ -63,12 +76,12 @@ public class MembersController : ControllerBase
     [HttpPost("{userId:guid}/approve")]
     [HasPermission(Permissions.MembersManage)]
     public async Task<IActionResult> Approve(Guid userId, CancellationToken cancellationToken) =>
-        ToActionResult(await _mediator.Send(new ApproveMemberCommand(userId), cancellationToken));
+        await Audited(await _mediator.Send(new ApproveMemberCommand(userId), cancellationToken), "member.approved", userId, "Join request approved.", cancellationToken);
 
     [HttpDelete("{userId:guid}")]
     [HasPermission(Permissions.MembersManage)]
     public async Task<IActionResult> Remove(Guid userId, CancellationToken cancellationToken) =>
-        ToActionResult(await _mediator.Send(new RemoveMemberCommand(userId), cancellationToken));
+        await Audited(await _mediator.Send(new RemoveMemberCommand(userId), cancellationToken), "member.removed", userId, "Removed from the organization.", cancellationToken);
 
     /// <summary>Sets a temporary password for a member (they must change it at next sign-in). Shown once.</summary>
     [HttpPost("{userId:guid}/reset-password")]
