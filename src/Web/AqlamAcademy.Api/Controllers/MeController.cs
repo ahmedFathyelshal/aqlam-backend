@@ -100,6 +100,15 @@ public class MeController : ControllerBase
         return ToActionResult(await identity.SetBirthYearOnceAsync(currentUser.UserId, request.BirthYear));
     }
 
+    /// <summary>A linked parent sets a temporary password for their child; the child must change it at next sign-in.</summary>
+    [HttpPost("children/{childId:guid}/reset-password")]
+    [EnableRateLimiting(PresentationDependencyInjection.AuthRateLimitPolicy)]
+    public async Task<IActionResult> ResetChildPassword(Guid childId, [FromServices] IPasswordRecoveryService recovery, [FromServices] ICurrentUserService currentUser, CancellationToken cancellationToken)
+    {
+        var result = await recovery.ResetChildPasswordAsync(currentUser.UserId, childId, cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
     private IActionResult ToActionResult(Result result) =>
         result.Succeeded ? Ok(result) : this.ToFailureResult(result);
 }

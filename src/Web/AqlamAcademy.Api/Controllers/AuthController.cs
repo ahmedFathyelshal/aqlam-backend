@@ -177,6 +177,27 @@ public class AuthController : ControllerBase
         return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
     }
 
+    /// <summary>Emails a reset link when the account has an email. Always answers the same, so accounts cannot be probed.</summary>
+    [HttpPost("forgot-password")]
+    [EnableRateLimiting(PresentationDependencyInjection.AuthRateLimitPolicy)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, [FromServices] AqlamAcademy.Application.Common.Interfaces.IPasswordRecoveryService recovery, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(request.Identifier) && request.Identifier.Length <= 256)
+            await recovery.RequestEmailResetAsync(request.Identifier, cancellationToken);
+        return Ok(Result.Success());
+    }
+
+    [HttpPost("reset-password")]
+    [EnableRateLimiting(PresentationDependencyInjection.AuthRateLimitPolicy)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, [FromServices] AqlamAcademy.Application.Common.Interfaces.IPasswordRecoveryService recovery, CancellationToken cancellationToken)
+    {
+        var result = await recovery.ConfirmEmailResetAsync(request.UserId, request.Token ?? string.Empty, request.NewPassword ?? string.Empty, cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
+    public record ForgotPasswordRequest(string Identifier);
+    public record ResetPasswordRequest(Guid UserId, string? Token, string? NewPassword);
+
     [HttpGet("me")]
     [Authorize]
     public ActionResult<Result<LoginResponse>> GetCurrentUser()

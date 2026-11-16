@@ -1,6 +1,7 @@
 using AqlamAcademy.Api.Infrastructure;
 using AqlamAcademy.Api.Infrastructure.Authorization;
 using AqlamAcademy.Application.Common.Authorization;
+using AqlamAcademy.Application.Common.Interfaces;
 using AqlamAcademy.Application.Features.Organizations.Members;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -68,6 +69,17 @@ public class MembersController : ControllerBase
     [HasPermission(Permissions.MembersManage)]
     public async Task<IActionResult> Remove(Guid userId, CancellationToken cancellationToken) =>
         ToActionResult(await _mediator.Send(new RemoveMemberCommand(userId), cancellationToken));
+
+    /// <summary>Sets a temporary password for a member (they must change it at next sign-in). Shown once.</summary>
+    [HttpPost("{userId:guid}/reset-password")]
+    [HasPermission(Permissions.MembersManage)]
+    public async Task<IActionResult> ResetPassword(Guid userId, [FromServices] IPasswordRecoveryService recovery, [FromServices] ICurrentUserService currentUser, [FromServices] ICurrentOrganization organization, CancellationToken cancellationToken)
+    {
+        if (organization.OrganizationId is not { } orgId)
+            return NotFound();
+        var result = await recovery.ResetMemberPasswordAsync(orgId, currentUser.UserId, userId, cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
 
     public record UpdateRolesRequest(IReadOnlyList<string> Roles);
     public record SetGenderRequest(AqlamAcademy.Domain.Classes.Gender? Gender);

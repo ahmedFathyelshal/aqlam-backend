@@ -42,6 +42,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<AqlamAcademy.Domain.Learning.Enrollment> Enrollments => Set<AqlamAcademy.Domain.Learning.Enrollment>();
     public DbSet<ParentLink> ParentLinks => Set<ParentLink>();
     public DbSet<ParentInvite> ParentInvites => Set<ParentInvite>();
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
     public DbSet<AqlamAcademy.Domain.Communication.Notification> Notifications => Set<AqlamAcademy.Domain.Communication.Notification>();
 
     // Marketplace (public copies of public courses and listed teachers) and money

@@ -526,6 +526,42 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.ToTable("Teachers", "Marketplace");
                 });
 
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.AuditEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TargetUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AtUtc");
+
+                    b.HasIndex("TargetUserId");
+
+                    b.ToTable("AuditEntries", "Organizations");
+                });
+
             modelBuilder.Entity("AqlamAcademy.Domain.Organizations.JoinCode", b =>
                 {
                     b.Property<Guid>("Id")

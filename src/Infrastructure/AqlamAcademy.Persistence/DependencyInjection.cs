@@ -121,6 +121,8 @@ public static class DependencyInjection
         services.AddScoped<PersonalOrganizationFactory>();
         services.AddScoped<IOrganizationAdminService, OrganizationAdminService>();
         services.AddScoped<IOrganizationMembersService, OrganizationMembersService>();
+        services.AddScoped<IAuditLog, AuditLog>();
+        services.AddScoped<IPasswordRecoveryService, PasswordRecoveryService>();
         services.AddScoped<AqlamAcademy.Application.Features.Organizations.Members.IMemberImportService, MemberImportService>();
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
 
