@@ -54,6 +54,22 @@ public class PasswordRecoveryService(
         return Result<TemporaryPasswordDto>.Success(new TemporaryPasswordDto(user.UserName!, password));
     }
 
+    public async Task<Result<TemporaryPasswordDto>> ResetAnyPasswordAsync(Guid actorUserId, Guid targetUserId, CancellationToken cancellationToken)
+    {
+        if (actorUserId == targetUserId)
+            return Result<TemporaryPasswordDto>.Conflict("Use change password for your own account.");
+        var user = await userManager.FindByIdAsync(targetUserId.ToString());
+        if (user is null || user.IsDeleted)
+            return Result<TemporaryPasswordDto>.NotFound("User not found.");
+
+        var password = await SetTemporaryPasswordAsync(user, cancellationToken);
+        if (password is null)
+            return Result<TemporaryPasswordDto>.Failure(ResultErrorType.Validation, "Could not reset the password.");
+
+        await audit.WriteAsync("password.reset.platform", actorUserId, targetUserId, null, $"Temporary password set for {user.UserName}.", cancellationToken);
+        return Result<TemporaryPasswordDto>.Success(new TemporaryPasswordDto(user.UserName!, password));
+    }
+
     public async Task<Result<TemporaryPasswordDto>> ResetChildPasswordAsync(Guid parentUserId, Guid childUserId, CancellationToken cancellationToken)
     {
         var linked = await context.ParentLinks.AsNoTracking().AnyAsync(l => l.ParentUserId == parentUserId && l.ChildUserId == childUserId, cancellationToken);

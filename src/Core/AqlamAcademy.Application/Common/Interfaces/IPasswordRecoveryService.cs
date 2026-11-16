@@ -10,6 +10,9 @@ public interface IPasswordRecoveryService
     /// <summary>An organization admin sets a temporary password for a member; the member must change it at next sign-in.</summary>
     Task<Result<TemporaryPasswordDto>> ResetMemberPasswordAsync(Guid organizationId, Guid actorUserId, Guid targetUserId, CancellationToken cancellationToken);
 
+    /// <summary>Platform support sets a temporary password for any account (including a school owner).</summary>
+    Task<Result<TemporaryPasswordDto>> ResetAnyPasswordAsync(Guid actorUserId, Guid targetUserId, CancellationToken cancellationToken);
+
     /// <summary>A linked parent sets a temporary password for their child.</summary>
     Task<Result<TemporaryPasswordDto>> ResetChildPasswordAsync(Guid parentUserId, Guid childUserId, CancellationToken cancellationToken);
 
