@@ -177,7 +177,7 @@ public class SaveTeacherPhotoCommandHandler(IPublicProfileService profiles) : IR
 
 // ---------- Platform admin: featured teachers and fees ----------
 
-public record FeesDto(decimal? CommissionPercent, decimal? MonthlyStudentFeeSar, decimal? MonthlyStudentFeeEgp);
+public record FeesDto(decimal? CommissionPercent, decimal? MonthlyStudentFeeSar, decimal? MonthlyStudentFeeEgp, int MinimumPayingAge = 18);
 
 public record AdminTeacherDto(Guid OrganizationId, string Slug, string Name, string CountryCode, int CourseCount);
 
@@ -209,7 +209,7 @@ public class FeatureTeacherCommandHandler(IPlatformMarketplaceService service) :
         service.FeatureAsync(request, cancellationToken);
 }
 
-public record SaveFeesCommand(decimal? CommissionPercent, decimal? MonthlyStudentFeeSar, decimal? MonthlyStudentFeeEgp) : IRequest<Result<FeesDto>>;
+public record SaveFeesCommand(decimal? CommissionPercent, decimal? MonthlyStudentFeeSar, decimal? MonthlyStudentFeeEgp, int MinimumPayingAge = 18) : IRequest<Result<FeesDto>>;
 
 public class SaveFeesCommandValidator : AbstractValidator<SaveFeesCommand>
 {
@@ -218,6 +218,7 @@ public class SaveFeesCommandValidator : AbstractValidator<SaveFeesCommand>
         RuleFor(x => x.CommissionPercent).InclusiveBetween(0, 100);
         RuleFor(x => x.MonthlyStudentFeeSar).GreaterThanOrEqualTo(0);
         RuleFor(x => x.MonthlyStudentFeeEgp).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MinimumPayingAge).InclusiveBetween(13, 18);
     }
 }
 

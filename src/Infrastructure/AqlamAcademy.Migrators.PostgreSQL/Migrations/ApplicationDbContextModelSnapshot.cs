@@ -1252,6 +1252,9 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
 
+                    b.Property<int>("MinimumPayingAge")
+                        .HasColumnType("integer");
+
                     b.Property<decimal?>("MonthlyStudentFeeEgp")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");

@@ -19,6 +19,6 @@ public static class AgeRules
     /// Whether a learner may pay by themselves. Accounts with no birth year that are students (imported by a school,
     /// or registered before the rule) are treated as minors.
     /// </summary>
-    public static bool MayPay(int? birthYear, bool isStudent, DateTime now) =>
-        birthYear is { } year ? Age(year, now) >= AdultAge : !isStudent;
+    public static bool MayPay(int? birthYear, bool isStudent, DateTime now, int minimumPayingAge = AdultAge) =>
+        birthYear is { } year ? Age(year, now) >= Math.Clamp(minimumPayingAge, MinSelfRegistrationAge, AdultAge) : !isStudent;
 }

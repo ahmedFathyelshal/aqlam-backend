@@ -144,7 +144,7 @@ public class PlatformMarketplaceController(IPlatformMarketplaceService service, 
 
     [HttpPut("fees")]
     public async Task<IActionResult> SaveFees([FromBody] SaveFeesCommand command, CancellationToken cancellationToken) =>
-        await Audited(await mediator.Send(command, cancellationToken), "fees.changed", $"Commission {command.CommissionPercent}%, monthly fee SAR {command.MonthlyStudentFeeSar}, EGP {command.MonthlyStudentFeeEgp}.", cancellationToken);
+        await Audited(await mediator.Send(command, cancellationToken), "fees.changed", $"Commission {command.CommissionPercent}%, monthly fee SAR {command.MonthlyStudentFeeSar}, EGP {command.MonthlyStudentFeeEgp}, minimum paying age {command.MinimumPayingAge}.", cancellationToken);
 
     public record CommissionRequest(decimal? CommissionPercent);
 

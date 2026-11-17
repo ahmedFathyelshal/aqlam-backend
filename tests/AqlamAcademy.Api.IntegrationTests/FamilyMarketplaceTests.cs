@@ -29,6 +29,38 @@ public class FamilyMarketplaceTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task The_platform_can_lower_the_age_from_which_a_teen_pays_without_a_parent()
+    {
+        var (teacher, org) = await TeacherWithPersonalOrgAsync(factory, "agep");
+        var courseId = await PaidCourseAsync(teacher, org);
+        var slug = await SlugAsync(courseId);
+        var teen = factory.CreateBrowserClient();
+        await TestUsers.RegisterAndLoginAsync(teen, TestUsers.Student, "teen15", ThisYear - 15);
+
+        var admin = factory.CreateBrowserClient();
+        (await admin.PostAsJsonAsync("/api/Auth/login", new { userName = ApiFactory.PlatformAdminUserName, password = ApiFactory.PlatformAdminPassword })).EnsureSuccessStatusCode();
+        Task<HttpResponseMessage> SetAge(int age) => admin.PutAsJsonAsync("/api/platform/marketplace/fees", new { commissionPercent = 10m, monthlyStudentFeeSar = 5m, monthlyStudentFeeEgp = 20m, minimumPayingAge = age });
+
+        try
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, (await SetAge(12)).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await SetAge(19)).StatusCode);
+
+            // The default keeps a 15-year-old from paying; lowering the age to 15 lets them.
+            Assert.Equal(HttpStatusCode.Forbidden, (await teen.PostAsync($"/api/orgs/{org}/learn/courses/{courseId}/checkout", null)).StatusCode);
+            (await SetAge(15)).EnsureSuccessStatusCode();
+            Assert.False((await Data(await teen.GetAsync($"/api/marketplace/courses/{slug}"))).GetProperty("viewer").GetProperty("mustAskParent").GetBoolean());
+            Assert.Equal(HttpStatusCode.OK, (await teen.PostAsync($"/api/orgs/{org}/learn/courses/{courseId}/checkout", null)).StatusCode);
+            Assert.Equal(15, (await Data(await admin.GetAsync("/api/platform/marketplace/fees"))).GetProperty("minimumPayingAge").GetInt32());
+        }
+        finally
+        {
+            (await SetAge(18)).EnsureSuccessStatusCode();
+        }
+        Assert.Equal(HttpStatusCode.Forbidden, (await teen.PostAsync($"/api/orgs/{org}/learn/courses/{courseId}/checkout", null)).StatusCode);
+    }
+
+    [Fact]
     public async Task A_teenager_asks_a_parent_who_buys_the_course_for_them()
     {
         var (teacher, org) = await TeacherWithPersonalOrgAsync(factory, "famt");

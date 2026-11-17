@@ -87,6 +87,11 @@ public class PlatformFees
     /// <summary>Monthly fee for each active student an independent teacher registered themselves, per currency.</summary>
     public decimal? MonthlyStudentFeeSar { get; set; }
     public decimal? MonthlyStudentFeeEgp { get; set; }
+    /// <summary>
+    /// Age from which a student may pay by themselves (13 to 18). 18 means a linked parent always pays for a minor;
+    /// a lower value lets teens whose parents cannot be reached buy for themselves. Changed by the platform admin.
+    /// </summary>
+    public int MinimumPayingAge { get; set; } = 18;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public decimal? MonthlyFeeFor(string currency) => currency switch

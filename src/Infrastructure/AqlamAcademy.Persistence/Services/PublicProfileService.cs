@@ -176,7 +176,7 @@ public class PlatformMarketplaceService(ApplicationDbContext platform) : IPlatfo
     public async Task<FeesDto> GetFeesAsync(CancellationToken cancellationToken)
     {
         var fees = await platform.PlatformFees.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
-        return new FeesDto(fees?.CommissionPercent, fees?.MonthlyStudentFeeSar, fees?.MonthlyStudentFeeEgp);
+        return new FeesDto(fees?.CommissionPercent, fees?.MonthlyStudentFeeSar, fees?.MonthlyStudentFeeEgp, fees?.MinimumPayingAge ?? 18);
     }
 
     public async Task<FeesDto> SaveFeesAsync(SaveFeesCommand command, CancellationToken cancellationToken)
@@ -190,9 +190,10 @@ public class PlatformMarketplaceService(ApplicationDbContext platform) : IPlatfo
         fees.CommissionPercent = command.CommissionPercent;
         fees.MonthlyStudentFeeSar = command.MonthlyStudentFeeSar;
         fees.MonthlyStudentFeeEgp = command.MonthlyStudentFeeEgp;
+        fees.MinimumPayingAge = command.MinimumPayingAge;
         fees.UpdatedAtUtc = DateTime.UtcNow;
         await platform.SaveChangesAsync(cancellationToken);
-        return new FeesDto(fees.CommissionPercent, fees.MonthlyStudentFeeSar, fees.MonthlyStudentFeeEgp);
+        return new FeesDto(fees.CommissionPercent, fees.MonthlyStudentFeeSar, fees.MonthlyStudentFeeEgp, fees.MinimumPayingAge);
     }
 
     public async Task<Result> SetCommissionAsync(string slug, decimal? commissionPercent, CancellationToken cancellationToken)

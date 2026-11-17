@@ -12,7 +12,7 @@ namespace AqlamAcademy.Infrastructure.Persistence.Services;
 /// </summary>
 public class Learners(ApplicationDbContext platform, ICurrentUserService currentUser)
 {
-    public const string MinorMustAskParent = "Students under 18 cannot pay by themselves. Ask a parent to buy the course for you.";
+    public const string MinorMustAskParent = "Younger students cannot pay by themselves. Ask a parent to buy the course for you.";
 
     /// <summary>The learner (the child when <paramref name="forUserId"/> is a linked child), or a failure.</summary>
     public async Task<(Guid LearnerId, Result? Failure)> ResolveAsync(Guid? forUserId, CancellationToken cancellationToken)
@@ -35,6 +35,7 @@ public class Learners(ApplicationDbContext platform, ICurrentUserService current
                                join r in platform.Roles on ur.RoleId equals r.Id
                                where ur.UserId == me && r.Name == "Student"
                                select ur).AnyAsync(cancellationToken);
-        return AgeRules.MayPay(birthYear, isStudent, DateTime.UtcNow);
+        var minimumAge = await platform.PlatformFees.AsNoTracking().Select(f => (int?)f.MinimumPayingAge).FirstOrDefaultAsync(cancellationToken) ?? AgeRules.AdultAge;
+        return AgeRules.MayPay(birthYear, isStudent, DateTime.UtcNow, minimumAge);
     }
 }
