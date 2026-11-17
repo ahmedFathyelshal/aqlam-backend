@@ -26,7 +26,8 @@ public static class TestUsers
             password,
             confirmPassword = password,
             userType,
-            birthYear = userType == Student ? birthYear : null
+            birthYear = userType == Student ? birthYear : null,
+            acceptTerms = true
         });
         register.EnsureSuccessStatusCode();
 

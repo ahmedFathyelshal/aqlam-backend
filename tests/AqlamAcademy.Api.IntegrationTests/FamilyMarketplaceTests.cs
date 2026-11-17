@@ -24,7 +24,7 @@ public class FamilyMarketplaceTests(ApiFactory factory)
         var userName = $"noemail{Guid.NewGuid():N}"[..16];
         Assert.Equal(HttpStatusCode.OK, (await factory.CreateClient().PostAsJsonAsync("/api/Auth/register", new
         {
-            userName, email = (string?)null, password = TestUsers.Password, confirmPassword = TestUsers.Password, userType = TestUsers.Student, birthYear = ThisYear - 14
+            userName, email = (string?)null, password = TestUsers.Password, confirmPassword = TestUsers.Password, userType = TestUsers.Student, birthYear = ThisYear - 14, acceptTerms = true
         })).StatusCode);
     }
 
@@ -82,11 +82,11 @@ public class FamilyMarketplaceTests(ApiFactory factory)
         await TestUsers.RegisterAndLoginAsync(parent, TestUsers.Parent, "famk");
         var childUserName = $"kid{Guid.NewGuid():N}"[..16];
         var child = await Data(await parent.PostAsJsonAsync("/api/me/children/new",
-            new { userName = childUserName, password = TestUsers.Password, fullName = "Lina", birthYear = ThisYear - 9 }));
+            new { userName = childUserName, password = TestUsers.Password, fullName = "Lina", birthYear = ThisYear - 9, acceptTerms = true }));
         var childId = child.GetProperty("userId").GetString();
         // Adults are not created as children.
         Assert.Equal(HttpStatusCode.BadRequest, (await parent.PostAsJsonAsync("/api/me/children/new",
-            new { userName = $"adult{Guid.NewGuid():N}"[..16], password = TestUsers.Password, birthYear = ThisYear - 30 })).StatusCode);
+            new { userName = $"adult{Guid.NewGuid():N}"[..16], password = TestUsers.Password, birthYear = ThisYear - 30, acceptTerms = true })).StatusCode);
 
         // The parent joins a free course and uses a card code for the child.
         (await parent.PostAsync($"/api/orgs/{org}/learn/courses/{freeCourse}/enroll?forUserId={childId}", null)).EnsureSuccessStatusCode();
@@ -132,7 +132,7 @@ public class FamilyMarketplaceTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.Forbidden, (await student.PostAsync($"/api/orgs/{org}/learn/courses/{courseId}/checkout", null)).StatusCode);
 
         Assert.Equal(HttpStatusCode.BadRequest, (await student.PutAsJsonAsync("/api/me/birth-year", new { birthYear = ThisYear + 1 })).StatusCode);
-        (await student.PutAsJsonAsync("/api/me/birth-year", new { birthYear = ThisYear - 30 })).EnsureSuccessStatusCode();
+        (await student.PutAsJsonAsync("/api/me/birth-year", new { birthYear = ThisYear - 30, acceptTerms = true })).EnsureSuccessStatusCode();
         // Set once: a second change goes through support (so a teenager cannot "become" 18).
         Assert.Equal(HttpStatusCode.Conflict, (await student.PutAsJsonAsync("/api/me/birth-year", new { birthYear = ThisYear - 40 })).StatusCode);
 
@@ -145,7 +145,7 @@ public class FamilyMarketplaceTests(ApiFactory factory)
         var userName = $"{prefix}{Guid.NewGuid():N}"[..16];
         return factory.CreateClient().PostAsJsonAsync("/api/Auth/register", new
         {
-            userName, email = $"{userName}@test.local", password = TestUsers.Password, confirmPassword = TestUsers.Password, userType, birthYear
+            userName, email = $"{userName}@test.local", password = TestUsers.Password, confirmPassword = TestUsers.Password, userType, birthYear, acceptTerms = true
         });
     }
 

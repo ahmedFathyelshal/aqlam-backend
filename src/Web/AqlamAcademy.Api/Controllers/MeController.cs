@@ -81,8 +81,13 @@ public class MeController : ControllerBase
     /// <summary>A parent creates their child's account (required under 13) and is linked to it.</summary>
     [HttpPost("children/new")]
     [EnableRateLimiting(PresentationDependencyInjection.AuthRateLimitPolicy)]
-    public async Task<IActionResult> CreateChild([FromBody] CreateChildAccountCommand command, CancellationToken cancellationToken) =>
-        ToActionResult(await _mediator.Send(command, cancellationToken));
+    public async Task<IActionResult> CreateChild([FromBody] CreateChildAccountCommand command, [FromServices] ILegalService legal, [FromServices] ICurrentUserService currentUser, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(command, cancellationToken);
+        if (result.Succeeded && result.Data is { } child)
+            await legal.AcceptCurrentAsync(child.UserId, currentUser.UserId, cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
 
     /// <summary>A student's family code for a parent who will pay or follow them (shows the open code if there is one).</summary>
     [HttpPost("family-invite")]
@@ -108,6 +113,32 @@ public class MeController : ControllerBase
         var result = await recovery.ResetChildPasswordAsync(currentUser.UserId, childId, cancellationToken);
         return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
     }
+
+    /// <summary>Whether the user accepted the current terms and privacy texts.</summary>
+    [HttpGet("legal")]
+    public async Task<IActionResult> LegalStatus([FromServices] ILegalService legal, [FromServices] ICurrentUserService currentUser, CancellationToken cancellationToken) =>
+        Ok(Result<LegalStatusDto>.Success(await legal.GetStatusAsync(currentUser.UserId, cancellationToken)));
+
+    [HttpPost("legal/accept")]
+    public async Task<IActionResult> AcceptLegal([FromServices] ILegalService legal, [FromServices] ICurrentUserService currentUser, CancellationToken cancellationToken)
+    {
+        await legal.AcceptCurrentAsync(currentUser.UserId, null, cancellationToken);
+        return Ok(Result.Success());
+    }
+
+    public record DataRequestBody(string Type);
+
+    /// <summary>Asks to receive (Export) or delete (Delete) the account's personal data; an administrator handles it.</summary>
+    [HttpPost("data-requests")]
+    public async Task<IActionResult> CreateDataRequest([FromBody] DataRequestBody body, [FromServices] ILegalService legal, [FromServices] ICurrentUserService currentUser, CancellationToken cancellationToken)
+    {
+        var result = await legal.CreateRequestAsync(currentUser.UserId, body.Type, cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
+    [HttpGet("data-requests")]
+    public async Task<IActionResult> MyDataRequests([FromServices] ILegalService legal, [FromServices] ICurrentUserService currentUser, CancellationToken cancellationToken) =>
+        Ok(Result<IReadOnlyList<DataRequestDto>>.Success(await legal.ListMineAsync(currentUser.UserId, cancellationToken)));
 
     private IActionResult ToActionResult(Result result) =>
         result.Succeeded ? Ok(result) : this.ToFailureResult(result);

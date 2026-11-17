@@ -14,4 +14,7 @@ public class LoginResponse
 
     /// <summary>The client must send the user to "change password" before anything else.</summary>
     public bool MustChangePassword { get; set; }
+
+    /// <summary>The user has not accepted the current terms and privacy texts yet.</summary>
+    public bool LegalPending { get; set; }
 }

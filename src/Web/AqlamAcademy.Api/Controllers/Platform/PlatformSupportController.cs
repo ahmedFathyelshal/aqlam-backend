@@ -11,8 +11,19 @@ namespace AqlamAcademy.Api.Controllers.Platform;
 [ApiController]
 [Route("api/platform")]
 [Authorize(Roles = PlatformRoles.SuperAdmin)]
-public class PlatformSupportController(IPlatformAdminService admin, IPasswordRecoveryService recovery, ICurrentUserService me) : ControllerBase
+public class PlatformSupportController(IPlatformAdminService admin, IPasswordRecoveryService recovery, ILegalService legal, ICurrentUserService me) : ControllerBase
 {
+    /// <summary>Export and delete requests from users; status Open, Completed or Rejected.</summary>
+    [HttpGet("data-requests")]
+    public async Task<IActionResult> DataRequests([FromQuery] string? status, CancellationToken cancellationToken) =>
+        Ok(Result<IReadOnlyList<DataRequestDto>>.Success(await legal.ListAllAsync(status, cancellationToken)));
+
+    public record HandleRequestBody(bool Completed, string? Note);
+
+    [HttpPost("data-requests/{id:guid}/handle")]
+    public async Task<IActionResult> HandleDataRequest(Guid id, [FromBody] HandleRequestBody body, CancellationToken cancellationToken) =>
+        ToActionResult(await legal.HandleRequestAsync(me.UserId, id, body.Completed, body.Note, cancellationToken));
+
     [HttpGet("users")]
     public async Task<IActionResult> Users([FromQuery] string? q, [FromQuery] int take = 25, CancellationToken cancellationToken = default) =>
         Ok(Result<IReadOnlyList<PlatformUserDto>>.Success(await admin.SearchUsersAsync(q, take, cancellationToken)));

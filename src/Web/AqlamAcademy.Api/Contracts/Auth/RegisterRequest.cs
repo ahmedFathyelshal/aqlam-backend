@@ -8,4 +8,5 @@ public record RegisterRequest(
     string Password,
     string ConfirmPassword,
     UserType UserType,
-    int? BirthYear = null);
+    int? BirthYear = null,
+    bool AcceptTerms = false);

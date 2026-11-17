@@ -64,7 +64,7 @@ public class PasswordRecoveryTests(ApiFactory factory)
         var (parent, _, _) = await FamilyTestHelpers.ParentAsync(factory);
         var childName = $"kid{Guid.NewGuid():N}"[..16];
         var created = await parent.PostAsJsonAsync("/api/me/children/new",
-            new { userName = childName, password = TestUsers.Password, fullName = "Lina", birthYear = DateTime.UtcNow.Year - 9 });
+            new { userName = childName, password = TestUsers.Password, fullName = "Lina", birthYear = DateTime.UtcNow.Year - 9, acceptTerms = true });
         created.EnsureSuccessStatusCode();
         var childId = (await TestSchool.DataAsync(created)).GetProperty("userId").GetString();
 

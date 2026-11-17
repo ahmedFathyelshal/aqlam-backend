@@ -562,6 +562,43 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.ToTable("AuditEntries", "Organizations");
                 });
 
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.DataRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("HandledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("HandledByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Status", "CreatedAtUtc");
+
+                    b.ToTable("DataRequests", "Organizations");
+                });
+
             modelBuilder.Entity("AqlamAcademy.Domain.Organizations.JoinCode", b =>
                 {
                     b.Property<Guid>("Id")
@@ -623,6 +660,38 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.HasIndex("OrganizationId");
 
                     b.ToTable("JoinCodes", "Organizations");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.LegalAcceptance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AcceptedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AcceptedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Document")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Document", "Version");
+
+                    b.ToTable("LegalAcceptances", "Organizations");
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Organizations.Membership", b =>
@@ -1839,6 +1908,15 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.DataRequest", b =>
+                {
+                    b.HasOne("AqlamAcademy.Infrastructure.Persistence.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AqlamAcademy.Domain.Organizations.JoinCode", b =>
                 {
                     b.HasOne("AqlamAcademy.Domain.Organizations.Organization", "Organization")
@@ -1848,6 +1926,15 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                         .IsRequired();
 
                     b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Organizations.LegalAcceptance", b =>
+                {
+                    b.HasOne("AqlamAcademy.Infrastructure.Persistence.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Organizations.Membership", b =>

@@ -40,8 +40,11 @@ public class AuthController : ControllerBase
 
     [HttpPost("register")]
     [EnableRateLimiting(PresentationDependencyInjection.AuthRateLimitPolicy)]
-    public async Task<ActionResult<Result<RegisterResponse>>> Register(RegisterRequest request)
+    public async Task<ActionResult<Result<RegisterResponse>>> Register(RegisterRequest request, [FromServices] AqlamAcademy.Application.Common.Interfaces.ILegalService legal)
     {
+        if (!request.AcceptTerms)
+            return BadRequest(Result.Failure(["You must accept the terms and the privacy policy."]));
+
         _logger.LogInformation("Received register request for User: {UserName}", request.UserName);
 
         var command = _mapper.Map<RegisterUserCommand>(request);
@@ -54,6 +57,7 @@ public class AuthController : ControllerBase
         }
 
         _logger.LogInformation("Registration successful for User: {UserName}", request.UserName);
+        await legal.AcceptCurrentForNewUserAsync(request.UserName, HttpContext.RequestAborted);
 
         var response = _mapper.Map<RegisterResponse>(result.Data!);
 
@@ -62,7 +66,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [EnableRateLimiting(PresentationDependencyInjection.AuthRateLimitPolicy)]
-    public async Task<ActionResult<Result<LoginResponse>>> Login(LoginRequest request)
+    public async Task<ActionResult<Result<LoginResponse>>> Login(LoginRequest request, [FromServices] AqlamAcademy.Application.Common.Interfaces.ILegalService legal)
     {
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
@@ -85,11 +89,11 @@ public class AuthController : ControllerBase
         // Securely append the tokens inside HTTP-Only cookies, restricting XSS access.
         SetTokenCookies(result.Data!);
 
-        return Ok(Result<LoginResponse>.Success(ToResponse(result.Data!.User)));
+        return Ok(Result<LoginResponse>.Success(await ToResponseAsync(result.Data!.User, legal)));
     }
 
     [HttpPost("refresh")]
-    public async Task<ActionResult<Result<LoginResponse>>> Refresh()
+    public async Task<ActionResult<Result<LoginResponse>>> Refresh([FromServices] AqlamAcademy.Application.Common.Interfaces.ILegalService legal)
     {
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         _logger.LogInformation("Received refresh session request from IP: {IpAddress}", ipAddress);
@@ -129,7 +133,7 @@ public class AuthController : ControllerBase
         // Securely rotate the tokens inside HTTP-Only cookies
         SetTokenCookies(result.Data!);
 
-        return Ok(Result<LoginResponse>.Success(ToResponse(result.Data!.User)));
+        return Ok(Result<LoginResponse>.Success(await ToResponseAsync(result.Data!.User, legal)));
     }
 
     [HttpPost("logout")]
@@ -200,7 +204,7 @@ public class AuthController : ControllerBase
 
     [HttpGet("me")]
     [Authorize]
-    public ActionResult<Result<LoginResponse>> GetCurrentUser()
+    public async Task<ActionResult<Result<LoginResponse>>> GetCurrentUser([FromServices] AqlamAcademy.Application.Common.Interfaces.ILegalService legal)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
                      User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
@@ -219,8 +223,16 @@ public class AuthController : ControllerBase
             UserName = userName,
             Name = userName,
             Email = email,
-            Roles = roles
+            Roles = roles,
+            LegalPending = Guid.TryParse(userId, out var uid) && (await legal.GetStatusAsync(uid, HttpContext.RequestAborted)).Pending
         }));
+    }
+
+    private async Task<LoginResponse> ToResponseAsync(AuthUser user, AqlamAcademy.Application.Common.Interfaces.ILegalService legal)
+    {
+        var response = ToResponse(user);
+        response.LegalPending = (await legal.GetStatusAsync(user.Id, HttpContext.RequestAborted)).Pending;
+        return response;
     }
 
     private static LoginResponse ToResponse(AuthUser user) => new()

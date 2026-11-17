@@ -65,7 +65,7 @@ public class CreateFamilyInviteCommandHandler(IParentService parents) : IRequest
 }
 
 /// <summary>A parent creates a child's account (the way in for children under 13) and is linked to it.</summary>
-public record CreateChildAccountCommand(string UserName, string Password, string? FullName, int BirthYear) : IRequest<Result<ChildDto>>;
+public record CreateChildAccountCommand(string UserName, string Password, string? FullName, int BirthYear, bool AcceptTerms = false) : IRequest<Result<ChildDto>>;
 
 public class CreateChildAccountCommandValidator : AbstractValidator<CreateChildAccountCommand>
 {
@@ -74,6 +74,7 @@ public class CreateChildAccountCommandValidator : AbstractValidator<CreateChildA
         RuleFor(x => x.UserName).NotEmpty().MaximumLength(64)
             .MustAsync(async (name, _) => await identity.IsUserNameUniqueAsync(name.Trim())).WithMessage("This username is taken.");
         RuleFor(x => x.Password).NotEmpty().MinimumLength(8);
+        RuleFor(x => x.AcceptTerms).Equal(true).WithMessage("Accept the terms and the privacy policy on behalf of your child.");
         RuleFor(x => x.FullName).MaximumLength(100);
         RuleFor(x => x.BirthYear).Must(y => Domain.Common.AgeRules.IsValidBirthYear(y, DateTime.UtcNow)
             && Domain.Common.AgeRules.Age(y, DateTime.UtcNow) < Domain.Common.AgeRules.AdultAge).WithMessage("Enter the child's birth year.");
