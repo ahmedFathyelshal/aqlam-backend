@@ -43,6 +43,10 @@ builder.Services.AddPresentation(builder.Configuration);
 builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
+// Uptime probes: /health answers without touching the database; /health/ready also checks it.
+builder.Services.AddHealthChecks()
+    .AddCheck<AqlamAcademy.Api.Infrastructure.DatabaseHealthCheck>("database", tags: ["ready"]);
+
 // 4. Global Error Handling
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -88,6 +92,8 @@ app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UsePresentation();
 app.MapControllers();
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions { Predicate = _ => false }).DisableRateLimiting();
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") }).DisableRateLimiting();
 
 
 try
