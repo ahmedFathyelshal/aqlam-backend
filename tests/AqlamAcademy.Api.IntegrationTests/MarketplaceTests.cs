@@ -264,7 +264,7 @@ public class MarketplaceTests(ApiFactory factory)
     private static int? Int(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : null;
 
     /// <summary>A published, public mathematics course with two video lessons.</summary>
-    private static async Task<string> PublicCourseAsync(HttpClient teacher, string org, string title, decimal? price = null, bool codesOnly = false, bool previewFirstLesson = false)
+    internal static async Task<string> PublicCourseAsync(HttpClient teacher, string org, string title, decimal? price = null, bool codesOnly = false, bool previewFirstLesson = false)
     {
         var courseId = await CreateDraftAsync(teacher, org, title);
         await MakePublishableAsync(teacher, org, courseId);

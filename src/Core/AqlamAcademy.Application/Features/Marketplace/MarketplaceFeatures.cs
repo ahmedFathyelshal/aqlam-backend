@@ -28,7 +28,10 @@ public record CourseCardDto(
     int FreePreviewCount,
     int? CurriculumId,
     int? GradeId,
-    int? SubjectId);
+    int? SubjectId,
+    /// <summary>Null until the course has enough reviews.</summary>
+    double? RatingAverage = null,
+    int RatingCount = 0);
 
 public record TeacherCardDto(
     string Slug,
@@ -40,7 +43,9 @@ public record TeacherCardDto(
     string? PhotoUrl,
     IReadOnlyList<int> SubjectIds,
     IReadOnlyList<int> GradeIds,
-    int CourseCount);
+    int CourseCount,
+    double? RatingAverage = null,
+    int RatingCount = 0);
 
 public record PagedDto<T>(IReadOnlyList<T> Items, int Total, int Page, int PageSize);
 
@@ -58,7 +63,9 @@ public record MarketplaceSearch(
     Gender? TeacherGender = null,
     bool? Free = null,
     int Page = 1,
-    int PageSize = 12);
+    int PageSize = 12,
+    /// <summary>"rating" puts well-rated results first (only those with enough reviews count); anything else is newest first, or by name.</summary>
+    string? Sort = null);
 
 /// <summary>A pick by أقلام (story 3.5.4). Never a ranking: the order is the platform's choice.</summary>
 public record FeaturedTeacherDto(Guid Id, int? SubjectId, int Order, TeacherCardDto Teacher);

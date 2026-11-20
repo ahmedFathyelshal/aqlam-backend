@@ -122,6 +122,7 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationAdminService, OrganizationAdminService>();
         services.AddScoped<IOrganizationMembersService, OrganizationMembersService>();
         services.AddScoped<IAuditLog, AuditLog>();
+        services.AddScoped<AqlamAcademy.Application.Features.Marketplace.IReviewService, ReviewService>();
         services.AddScoped<ILegalService, LegalService>();
         services.AddScoped<IPlatformAdminService, PlatformAdminService>();
         services.AddScoped<IPersonalDataService, PersonalDataService>();

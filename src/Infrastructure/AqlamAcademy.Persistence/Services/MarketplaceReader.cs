@@ -44,10 +44,24 @@ public class MarketplaceReader(
 
         var (page, size) = Paging(search);
         var total = await query.CountAsync(cancellationToken);
-        var rows = await query
-            .OrderBy(c => c.IsComingSoon).ThenByDescending(c => c.PublishedAtUtc).ThenBy(c => c.CourseId)
-            .Skip((page - 1) * size).Take(size)
-            .ToListAsync(cancellationToken);
+        List<MarketplaceCourse> rows;
+        if (search.Sort == "rating")
+        {
+            var min = CourseReview.MinRatingsToShow;
+            var reviews = platform.CourseReviews.AsNoTracking().Where(r => !r.IsHidden);
+            rows = await query
+                .OrderBy(c => c.IsComingSoon)
+                .ThenByDescending(c => reviews.Count(r => r.CourseId == c.CourseId) >= min ? reviews.Where(r => r.CourseId == c.CourseId).Average(r => (double?)r.Stars) ?? 0 : 0)
+                .ThenByDescending(c => c.PublishedAtUtc).ThenBy(c => c.CourseId)
+                .Skip((page - 1) * size).Take(size).ToListAsync(cancellationToken);
+        }
+        else
+        {
+            rows = await query
+                .OrderBy(c => c.IsComingSoon).ThenByDescending(c => c.PublishedAtUtc).ThenBy(c => c.CourseId)
+                .Skip((page - 1) * size).Take(size)
+                .ToListAsync(cancellationToken);
+        }
         return new PagedDto<CourseCardDto>(await CardsAsync(rows, cancellationToken), total, page, size);
     }
 
@@ -69,9 +83,22 @@ public class MarketplaceReader(
 
         var (page, size) = Paging(search);
         var total = await query.CountAsync(cancellationToken);
-        var rows = await query.OrderBy(t => t.Name).ThenBy(t => t.OrganizationId)
-            .Skip((page - 1) * size).Take(size).ToListAsync(cancellationToken);
-        return new PagedDto<TeacherCardDto>(rows.Select(ToCard).ToList(), total, page, size);
+        List<MarketplaceTeacher> rows;
+        if (search.Sort == "rating")
+        {
+            var min = CourseReview.MinRatingsToShow;
+            var reviews = platform.CourseReviews.AsNoTracking().Where(r => !r.IsHidden);
+            rows = await query
+                .OrderByDescending(t => reviews.Count(r => r.OrganizationId == t.OrganizationId) >= min ? reviews.Where(r => r.OrganizationId == t.OrganizationId).Average(r => (double?)r.Stars) ?? 0 : 0)
+                .ThenBy(t => t.Name).ThenBy(t => t.OrganizationId)
+                .Skip((page - 1) * size).Take(size).ToListAsync(cancellationToken);
+        }
+        else
+        {
+            rows = await query.OrderBy(t => t.Name).ThenBy(t => t.OrganizationId)
+                .Skip((page - 1) * size).Take(size).ToListAsync(cancellationToken);
+        }
+        return new PagedDto<TeacherCardDto>(await TeacherCardsAsync(rows, cancellationToken), total, page, size);
     }
 
     public async Task<FacetsDto> FacetsAsync(string? country, CancellationToken cancellationToken)
@@ -101,7 +128,8 @@ public class MarketplaceReader(
         if (!string.IsNullOrWhiteSpace(country))
             query = query.Where(x => x.t.CountryCode == country.ToUpperInvariant());
         var rows = await query.OrderBy(x => x.f.SubjectId).ThenBy(x => x.f.Order).ThenBy(x => x.t.Name).ToListAsync(cancellationToken);
-        return rows.Select(x => new FeaturedTeacherDto(x.f.Id, x.f.SubjectId, x.f.Order, ToCard(x.t))).ToList();
+        var cards = (await TeacherCardsAsync(rows.Select(x => x.t).ToList(), cancellationToken)).ToDictionary(c => c.Slug);
+        return rows.Select(x => new FeaturedTeacherDto(x.f.Id, x.f.SubjectId, x.f.Order, cards[x.t.Slug])).ToList();
     }
 
     public async Task<Result<TeacherPageDto>> TeacherAsync(string slug, CancellationToken cancellationToken)
@@ -112,7 +140,7 @@ public class MarketplaceReader(
         var bio = await platform.TeacherProfiles.AsNoTracking().Where(p => p.UserId == teacher.TeacherUserId).Select(p => p.Bio).FirstOrDefaultAsync(cancellationToken);
         var courses = await platform.MarketplaceCourses.AsNoTracking().Where(c => c.OrganizationId == teacher.OrganizationId)
             .OrderBy(c => c.IsComingSoon).ThenByDescending(c => c.PublishedAtUtc).ToListAsync(cancellationToken);
-        return Result<TeacherPageDto>.Success(new TeacherPageDto(ToCard(teacher), bio, await CardsAsync(courses, cancellationToken)));
+        return Result<TeacherPageDto>.Success(new TeacherPageDto((await TeacherCardsAsync([teacher], cancellationToken))[0], bio, await CardsAsync(courses, cancellationToken)));
     }
 
     public async Task<Result<CoursePageDto>> CourseAsync(string slug, CancellationToken cancellationToken)
@@ -140,7 +168,7 @@ public class MarketplaceReader(
         return Result<CoursePageDto>.Success(new CoursePageDto(
             card, row.CourseId, row.OrganizationSlug, course.PromoVideoUrl, course.SyllabusRequirements,
             (course.AccessExpiryPolicy ?? AccessExpiryPolicy.Unlimited).ToString(), course.AccessDurationDays,
-            chapters, teacher is null ? null : ToCard(teacher), providers.OnlinePaymentAvailable,
+            chapters, teacher is null ? null : (await TeacherCardsAsync([teacher], cancellationToken))[0], providers.OnlinePaymentAvailable,
             await ViewerAsync(row, cancellationToken)));
     }
 
@@ -221,14 +249,32 @@ public class MarketplaceReader(
         var orgIds = rows.Select(r => r.OrganizationId).Distinct().ToList();
         var teacherSlugs = await platform.MarketplaceTeachers.AsNoTracking().Where(t => orgIds.Contains(t.OrganizationId))
             .ToDictionaryAsync(t => t.OrganizationId, t => t.Slug, cancellationToken);
+        var ratings = await RatingsAsync(rows.Select(r => r.CourseId).ToList(), byCourse: true, cancellationToken);
         return rows.Select(c => new CourseCardDto(
             c.PublicSlug, c.Title, c.Subtitle, c.ThumbnailUrl, c.OrganizationName, c.OrganizationType.ToString(), c.TeacherName,
             teacherSlugs.GetValueOrDefault(c.OrganizationId), c.CountryCode, c.Currency, c.IsFree, c.Price, c.CodeActivationOnly,
-            c.IsComingSoon, c.LessonCount, c.TotalMinutes, c.FreePreviewCount, c.CurriculumId, c.GradeId, c.SubjectId)).ToList();
+            c.IsComingSoon, c.LessonCount, c.TotalMinutes, c.FreePreviewCount, c.CurriculumId, c.GradeId, c.SubjectId,
+            ratings.GetValueOrDefault(c.CourseId).Average, ratings.GetValueOrDefault(c.CourseId).Count)).ToList();
     }
 
-    private static TeacherCardDto ToCard(MarketplaceTeacher t) =>
-        new(t.Slug, t.Name, t.Headline, t.City, t.CountryCode, t.Gender.ToString(), t.PhotoUrl, t.SubjectIds, t.GradeIds, t.CourseCount);
+    private async Task<IReadOnlyList<TeacherCardDto>> TeacherCardsAsync(IReadOnlyCollection<MarketplaceTeacher> rows, CancellationToken cancellationToken)
+    {
+        var ratings = await RatingsAsync(rows.Select(t => t.OrganizationId).ToList(), byCourse: false, cancellationToken);
+        return rows.Select(t => ToCard(t, ratings.GetValueOrDefault(t.OrganizationId))).ToList();
+    }
+
+    /// <summary>Review count and average per course or per academy. The average stays null until there are enough reviews.</summary>
+    private async Task<Dictionary<Guid, (int Count, double? Average)>> RatingsAsync(List<Guid> ids, bool byCourse, CancellationToken cancellationToken)
+    {
+        var reviews = platform.CourseReviews.AsNoTracking().Where(r => !r.IsHidden);
+        var groups = byCourse
+            ? await reviews.Where(r => ids.Contains(r.CourseId)).GroupBy(r => r.CourseId).Select(g => new { Id = g.Key, Count = g.Count(), Sum = g.Sum(r => r.Stars) }).ToListAsync(cancellationToken)
+            : await reviews.Where(r => ids.Contains(r.OrganizationId)).GroupBy(r => r.OrganizationId).Select(g => new { Id = g.Key, Count = g.Count(), Sum = g.Sum(r => r.Stars) }).ToListAsync(cancellationToken);
+        return groups.ToDictionary(g => g.Id, g => (g.Count, g.Count >= CourseReview.MinRatingsToShow ? Math.Round((double)g.Sum / g.Count, 1) : (double?)null));
+    }
+
+    internal static TeacherCardDto ToCard(MarketplaceTeacher t, (int Count, double? Average) rating = default) =>
+        new(t.Slug, t.Name, t.Headline, t.City, t.CountryCode, t.Gender.ToString(), t.PhotoUrl, t.SubjectIds, t.GradeIds, t.CourseCount, rating.Average, rating.Count);
 
     private static (int Page, int Size) Paging(MarketplaceSearch search) =>
         (Math.Max(1, search.Page), Math.Clamp(search.PageSize, 1, MaxPageSize));

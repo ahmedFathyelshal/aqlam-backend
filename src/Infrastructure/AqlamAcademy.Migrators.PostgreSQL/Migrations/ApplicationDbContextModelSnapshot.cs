@@ -293,6 +293,57 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.ToTable("Subjects", "Lookups");
                 });
 
+            modelBuilder.Entity("AqlamAcademy.Domain.Marketplace.CourseReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("HiddenAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("HiddenByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("HiddenReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Stars")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("CourseId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("Reviews", "Marketplace");
+                });
+
             modelBuilder.Entity("AqlamAcademy.Domain.Marketplace.FeaturedTeacher", b =>
                 {
                     b.Property<Guid>("Id")

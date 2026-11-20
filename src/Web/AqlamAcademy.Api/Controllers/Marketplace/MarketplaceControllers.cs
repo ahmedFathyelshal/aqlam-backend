@@ -22,17 +22,32 @@ public class MarketplaceController(IMarketplaceReader reader) : ControllerBase
 {
     [HttpGet("courses")]
     public async Task<IActionResult> Courses([FromQuery] string? q, [FromQuery] string? country, [FromQuery] int? curriculumId, [FromQuery] int? gradeId,
-        [FromQuery] int? subjectId, [FromQuery] Gender? teacherGender, [FromQuery] bool? free, [FromQuery] int page = 1, [FromQuery] int pageSize = 12,
+        [FromQuery] int? subjectId, [FromQuery] Gender? teacherGender, [FromQuery] bool? free, [FromQuery] int page = 1, [FromQuery] int pageSize = 12, [FromQuery] string? sort = null,
         CancellationToken cancellationToken = default) =>
         Ok(Result<PagedDto<CourseCardDto>>.Success(await reader.SearchCoursesAsync(
-            new MarketplaceSearch(q, country, curriculumId, gradeId, subjectId, teacherGender, free, page, pageSize), cancellationToken)));
+            new MarketplaceSearch(q, country, curriculumId, gradeId, subjectId, teacherGender, free, page, pageSize, sort), cancellationToken)));
 
     [HttpGet("teachers")]
     public async Task<IActionResult> Teachers([FromQuery] string? q, [FromQuery] string? country, [FromQuery] int? curriculumId, [FromQuery] int? gradeId,
-        [FromQuery] int? subjectId, [FromQuery] Gender? teacherGender, [FromQuery] int page = 1, [FromQuery] int pageSize = 12,
+        [FromQuery] int? subjectId, [FromQuery] Gender? teacherGender, [FromQuery] int page = 1, [FromQuery] int pageSize = 12, [FromQuery] string? sort = null,
         CancellationToken cancellationToken = default) =>
         Ok(Result<PagedDto<TeacherCardDto>>.Success(await reader.SearchTeachersAsync(
-            new MarketplaceSearch(q, country, curriculumId, gradeId, subjectId, teacherGender, null, page, pageSize), cancellationToken)));
+            new MarketplaceSearch(q, country, curriculumId, gradeId, subjectId, teacherGender, null, page, pageSize, sort), cancellationToken)));
+
+    /// <summary>
+    /// Top independent teachers of a subject, by their students' reviews. Only teachers with enough reviews appear; never paid or hand-picked.
+    /// </summary>
+    [HttpGet("top-teachers")]
+    public async Task<IActionResult> TopTeachers([FromQuery] int subjectId, [FromQuery] string? country, [FromServices] IReviewService reviews, CancellationToken cancellationToken) =>
+        Ok(Result<IReadOnlyList<TopTeacherDto>>.Success(await reviews.TopTeachersAsync(subjectId, country, cancellationToken)));
+
+    /// <summary>A course's reviews and rating summary. When signed in, also whether the viewer may review and their own review.</summary>
+    [HttpGet("courses/{slug}/reviews")]
+    public async Task<IActionResult> Reviews(string slug, [FromQuery] int page, [FromServices] IReviewService reviews, CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "private, no-store";
+        return ToActionResult(await reviews.ListAsync(slug, page, cancellationToken));
+    }
 
     [HttpGet("facets")]
     public async Task<IActionResult> Facets([FromQuery] string? country, CancellationToken cancellationToken) =>
@@ -70,6 +85,25 @@ public class MarketplaceController(IMarketplaceReader reader) : ControllerBase
     [HttpGet("courses/{slug}/lessons/{lessonId:guid}")]
     public async Task<IActionResult> Preview(string slug, Guid lessonId, CancellationToken cancellationToken) =>
         ToActionResult(await reader.PreviewAsync(slug, lessonId, cancellationToken));
+
+    private IActionResult ToActionResult(Result result) => result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+}
+
+/// <summary>A student writes, changes or removes their own review of a course they are enrolled in.</summary>
+[ApiController]
+[Route("api/marketplace/courses/{slug}/review")]
+[Authorize]
+public class CourseReviewController(IReviewService reviews) : ControllerBase
+{
+    public record ReviewBody(int Stars, string? Comment);
+
+    [HttpPut]
+    public async Task<IActionResult> Save(string slug, [FromBody] ReviewBody body, CancellationToken cancellationToken) =>
+        ToActionResult(await reviews.SaveMineAsync(slug, body.Stars, body.Comment, cancellationToken));
+
+    [HttpDelete]
+    public async Task<IActionResult> Delete(string slug, CancellationToken cancellationToken) =>
+        ToActionResult(await reviews.DeleteMineAsync(slug, cancellationToken));
 
     private IActionResult ToActionResult(Result result) => result.Succeeded ? Ok(result) : this.ToFailureResult(result);
 }
@@ -124,6 +158,21 @@ public class PlatformMarketplaceController(IPlatformMarketplaceService service, 
     [HttpGet("featured")]
     public async Task<IActionResult> Featured(CancellationToken cancellationToken) =>
         Ok(Result<IReadOnlyList<FeaturedTeacherDto>>.Success(await service.ListFeaturedAsync(cancellationToken)));
+
+    /// <summary>Recent reviews for moderation; hidden=true lists only the hidden ones.</summary>
+    [HttpGet("reviews")]
+    public async Task<IActionResult> Reviews([FromQuery] bool? hidden, [FromQuery] int skip, [FromQuery] int take, [FromServices] IReviewService reviews, CancellationToken cancellationToken) =>
+        Ok(Result<IReadOnlyList<AdminReviewDto>>.Success(await reviews.AdminListAsync(hidden, skip, take == 0 ? 25 : take, cancellationToken)));
+
+    public record HideReviewRequest(string? Reason);
+
+    [HttpPost("reviews/{id:guid}/hide")]
+    public async Task<IActionResult> HideReview(Guid id, [FromBody] HideReviewRequest body, [FromServices] IReviewService reviews, CancellationToken cancellationToken) =>
+        ToActionResult(await reviews.AdminSetHiddenAsync(me.UserId, id, true, body.Reason, cancellationToken));
+
+    [HttpPost("reviews/{id:guid}/unhide")]
+    public async Task<IActionResult> UnhideReview(Guid id, [FromServices] IReviewService reviews, CancellationToken cancellationToken) =>
+        ToActionResult(await reviews.AdminSetHiddenAsync(me.UserId, id, false, null, cancellationToken));
 
     /// <summary>Listed teachers the admin can pick from.</summary>
     [HttpGet("teachers")]

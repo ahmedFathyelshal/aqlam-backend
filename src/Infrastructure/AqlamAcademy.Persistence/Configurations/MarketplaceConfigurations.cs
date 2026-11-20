@@ -36,6 +36,20 @@ public class MarketplaceCourseConfiguration : IEntityTypeConfiguration<Marketpla
     }
 }
 
+public class CourseReviewConfiguration : IEntityTypeConfiguration<CourseReview>
+{
+    public void Configure(EntityTypeBuilder<CourseReview> builder)
+    {
+        builder.ToTable("Reviews", SchemaNames.Marketplace);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Comment).HasMaxLength(CourseReview.MaxCommentLength);
+        builder.Property(x => x.HiddenReason).HasMaxLength(300);
+        // One review per student and course. No foreign keys: a course can leave the marketplace and return.
+        builder.HasIndex(x => new { x.CourseId, x.UserId }).IsUnique();
+        builder.HasIndex(x => x.OrganizationId);
+    }
+}
+
 public class MarketplaceTeacherConfiguration : IEntityTypeConfiguration<MarketplaceTeacher>
 {
     public void Configure(EntityTypeBuilder<MarketplaceTeacher> builder)

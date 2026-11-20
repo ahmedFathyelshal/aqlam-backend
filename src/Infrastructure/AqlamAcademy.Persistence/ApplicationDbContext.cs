@@ -50,6 +50,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     // Marketplace (public copies of public courses and listed teachers) and money
     public DbSet<AqlamAcademy.Domain.Marketplace.MarketplaceCourse> MarketplaceCourses => Set<AqlamAcademy.Domain.Marketplace.MarketplaceCourse>();
     public DbSet<AqlamAcademy.Domain.Marketplace.MarketplaceTeacher> MarketplaceTeachers => Set<AqlamAcademy.Domain.Marketplace.MarketplaceTeacher>();
+    public DbSet<AqlamAcademy.Domain.Marketplace.CourseReview> CourseReviews => Set<AqlamAcademy.Domain.Marketplace.CourseReview>();
     public DbSet<AqlamAcademy.Domain.Marketplace.FeaturedTeacher> FeaturedTeachers => Set<AqlamAcademy.Domain.Marketplace.FeaturedTeacher>();
     public DbSet<TeacherPhoto> TeacherPhotos => Set<TeacherPhoto>();
     public DbSet<AqlamAcademy.Domain.Payments.Payment> Payments => Set<AqlamAcademy.Domain.Payments.Payment>();
