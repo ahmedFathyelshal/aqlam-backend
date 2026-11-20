@@ -124,6 +124,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditLog, AuditLog>();
         services.AddScoped<ILegalService, LegalService>();
         services.AddScoped<IPlatformAdminService, PlatformAdminService>();
+        services.AddScoped<IPersonalDataService, PersonalDataService>();
         services.AddScoped<IPasswordRecoveryService, PasswordRecoveryService>();
         services.AddScoped<AqlamAcademy.Application.Features.Organizations.Members.IMemberImportService, MemberImportService>();
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));

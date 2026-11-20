@@ -4,7 +4,7 @@ namespace AqlamAcademy.Application.Common.Interfaces;
 
 public record LegalDocumentStatusDto(string Document, string Version, bool Accepted);
 public record LegalStatusDto(IReadOnlyList<LegalDocumentStatusDto> Documents, bool Pending);
-public record DataRequestDto(Guid Id, string? UserName, string Type, string Status, string? Note, DateTime CreatedAtUtc, DateTime? HandledAtUtc);
+public record DataRequestDto(Guid Id, string? UserName, string Type, string Status, string? Note, DateTime CreatedAtUtc, DateTime? HandledAtUtc, Guid UserId = default);
 
 /// <summary>Versioned terms and privacy acceptance, and export/delete requests for personal data.</summary>
 public interface ILegalService

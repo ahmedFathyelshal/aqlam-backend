@@ -74,7 +74,7 @@ Practise this once on a spare database before the pilot starts.
 
 The platform admin console (`/admin/console`) holds: user search, lock/unlock, temporary passwords for any account, suspending a school, personal-data requests (export/delete) and the audit log. A suspended school's members lose access within about two minutes and its courses leave the marketplace; data is kept.
 
-Handling a **data request**: the user files it from the privacy page; an admin sees it under "Data requests", performs the export or deletion by hand (there is no automatic export yet), then marks it done or declined with a note. Every step is in the audit log.
+Personal data requests: a user downloads a JSON copy of their own data from the privacy page (this also closes any open export request). A deletion request appears under "Data requests"; the admin presses "Delete account", which removes the person's name, contact details, birth year and sign-in, ends their access and leaves their school memberships as "left". Payment and audit records stay without identity. Accounts that own a school, and platform admins, cannot be deleted this way. The export covers what the platform holds; a school's own learning records (attendance, grades) belong to the school. Every step is in the audit log.
 
 ## 6. Before going live, still open
 

@@ -89,5 +89,5 @@ public class LegalService(ApplicationDbContext context, IAuditLog audit) : ILega
     }
 
     private static DataRequestDto ToDto(DataRequest r, string? userName) =>
-        new(r.Id, userName, r.Type.ToString(), r.Status.ToString(), r.Note, r.CreatedAtUtc, r.HandledAtUtc);
+        new(r.Id, userName, r.Type.ToString(), r.Status.ToString(), r.Note, r.CreatedAtUtc, r.HandledAtUtc, r.UserId);
 }

@@ -136,6 +136,14 @@ public class MeController : ControllerBase
         return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
     }
 
+    /// <summary>The account holder downloads a copy of their own data (also completes an open export request).</summary>
+    [HttpGet("data-export")]
+    public async Task<IActionResult> DataExport([FromServices] IPersonalDataService personalData, [FromServices] ICurrentUserService currentUser, CancellationToken cancellationToken)
+    {
+        var result = await personalData.ExportAsync(currentUser.UserId, currentUser.UserId, cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
     [HttpGet("data-requests")]
     public async Task<IActionResult> MyDataRequests([FromServices] ILegalService legal, [FromServices] ICurrentUserService currentUser, CancellationToken cancellationToken) =>
         Ok(Result<IReadOnlyList<DataRequestDto>>.Success(await legal.ListMineAsync(currentUser.UserId, cancellationToken)));

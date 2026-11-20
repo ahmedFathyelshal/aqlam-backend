@@ -11,7 +11,7 @@ namespace AqlamAcademy.Api.Controllers.Platform;
 [ApiController]
 [Route("api/platform")]
 [Authorize(Roles = PlatformRoles.SuperAdmin)]
-public class PlatformSupportController(IPlatformAdminService admin, IPasswordRecoveryService recovery, ILegalService legal, ICurrentUserService me) : ControllerBase
+public class PlatformSupportController(IPlatformAdminService admin, IPasswordRecoveryService recovery, ILegalService legal, IPersonalDataService personalData, ICurrentUserService me) : ControllerBase
 {
     /// <summary>Export and delete requests from users; status Open, Completed or Rejected.</summary>
     [HttpGet("data-requests")]
@@ -42,6 +42,19 @@ public class PlatformSupportController(IPlatformAdminService admin, IPasswordRec
         var result = await recovery.ResetAnyPasswordAsync(me.UserId, userId, cancellationToken);
         return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
     }
+
+    /// <summary>A copy of everything the platform holds about the user (JSON).</summary>
+    [HttpGet("users/{userId:guid}/export")]
+    public async Task<IActionResult> Export(Guid userId, CancellationToken cancellationToken)
+    {
+        var result = await personalData.ExportAsync(me.UserId, userId, cancellationToken);
+        return result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+    }
+
+    /// <summary>Anonymises the account (deletion request). The person loses access; payment and audit records stay without identity.</summary>
+    [HttpPost("users/{userId:guid}/delete")]
+    public async Task<IActionResult> Delete(Guid userId, CancellationToken cancellationToken) =>
+        ToActionResult(await personalData.AnonymizeAsync(me.UserId, userId, cancellationToken));
 
     [HttpPost("organizations/{slug}/suspend")]
     public async Task<IActionResult> Suspend(string slug, CancellationToken cancellationToken) =>
