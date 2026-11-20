@@ -76,6 +76,67 @@ public class EarningsController(IEarningsService earnings) : ControllerBase
     }
 }
 
+/// <summary>
+/// The wallet: balances and history can be seen by finance staff; saving bank details and asking for a payout is for owners.
+/// </summary>
+[ApiController]
+[Route("api/orgs/{org}/wallet")]
+[Route("api/wallet")]
+public class WalletController(IWalletService wallet, ISender mediator) : ControllerBase
+{
+    [HttpGet]
+    [HasPermission(Permissions.FinanceView)]
+    public async Task<IActionResult> Get(CancellationToken cancellationToken) => ToActionResult(await wallet.GetAsync(cancellationToken));
+
+    [HttpPut("account")]
+    [HasPermission(Permissions.FinanceWithdraw)]
+    public async Task<IActionResult> SaveAccount([FromBody] SavePayoutAccountCommand command, CancellationToken cancellationToken) =>
+        ToActionResult(await mediator.Send(command, cancellationToken));
+
+    [HttpPost("payouts")]
+    [HasPermission(Permissions.FinanceWithdraw)]
+    public async Task<IActionResult> Request([FromBody] RequestPayoutCommand command, CancellationToken cancellationToken) =>
+        ToActionResult(await mediator.Send(command, cancellationToken));
+
+    [HttpPost("payouts/{id:guid}/cancel")]
+    [HasPermission(Permissions.FinanceWithdraw)]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken) => ToActionResult(await wallet.CancelAsync(id, cancellationToken));
+
+    private IActionResult ToActionResult(Result result) => result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+}
+
+/// <summary>Platform admin: the payout queue. Money is sent by bank transfer outside the app; here it is recorded.</summary>
+[ApiController]
+[Route("api/platform/payouts")]
+[Authorize(Roles = PlatformRoles.SuperAdmin)]
+public class PlatformPayoutsController(IPayoutAdminService payouts) : ControllerBase
+{
+    [HttpGet]
+    public async Task<IActionResult> List([FromQuery] string? status, CancellationToken cancellationToken) =>
+        Ok(Result<IReadOnlyList<AdminPayoutDto>>.Success(await payouts.ListAsync(status, cancellationToken)));
+
+    public record PaidRequest(string? TransferReference);
+    public record RejectRequest(string? Reason);
+
+    [HttpPost("{id:guid}/paid")]
+    public async Task<IActionResult> Paid(Guid id, [FromBody] PaidRequest body, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(body.TransferReference) || body.TransferReference.Length > 120)
+            return this.ToFailureResult(Result<AdminPayoutDto>.Failure(["Enter the bank transfer reference."]));
+        return ToActionResult(await payouts.MarkPaidAsync(id, body.TransferReference.Trim(), cancellationToken));
+    }
+
+    [HttpPost("{id:guid}/reject")]
+    public async Task<IActionResult> Reject(Guid id, [FromBody] RejectRequest body, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(body.Reason) || body.Reason.Length > 500)
+            return this.ToFailureResult(Result<AdminPayoutDto>.Failure(["Give the reason (up to 500 characters)."]));
+        return ToActionResult(await payouts.RejectAsync(id, body.Reason.Trim(), cancellationToken));
+    }
+
+    private IActionResult ToActionResult(Result result) => result.Succeeded ? Ok(result) : this.ToFailureResult(result);
+}
+
 /// <summary>Activation code batches of one course (owners, admins and coordinators; the teacher in a personal academy).</summary>
 [ApiController]
 [Route("api/orgs/{org}/courses/{id:guid}/code-batches")]

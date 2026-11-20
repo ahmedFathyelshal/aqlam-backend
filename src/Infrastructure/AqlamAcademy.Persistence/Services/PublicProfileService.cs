@@ -176,7 +176,7 @@ public class PlatformMarketplaceService(ApplicationDbContext platform) : IPlatfo
     public async Task<FeesDto> GetFeesAsync(CancellationToken cancellationToken)
     {
         var fees = await platform.PlatformFees.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
-        return new FeesDto(fees?.CommissionPercent, fees?.MonthlyStudentFeeSar, fees?.MonthlyStudentFeeEgp, fees?.MinimumPayingAge ?? 18);
+        return new FeesDto(fees?.CommissionPercent, fees?.MonthlyStudentFeeSar, fees?.MonthlyStudentFeeEgp, fees?.MinimumPayingAge ?? 18, fees?.PayoutHoldDays ?? 7, fees?.MinimumPayoutSar, fees?.MinimumPayoutEgp);
     }
 
     public async Task<FeesDto> SaveFeesAsync(SaveFeesCommand command, CancellationToken cancellationToken)
@@ -191,9 +191,12 @@ public class PlatformMarketplaceService(ApplicationDbContext platform) : IPlatfo
         fees.MonthlyStudentFeeSar = command.MonthlyStudentFeeSar;
         fees.MonthlyStudentFeeEgp = command.MonthlyStudentFeeEgp;
         fees.MinimumPayingAge = command.MinimumPayingAge;
+        fees.PayoutHoldDays = command.PayoutHoldDays;
+        fees.MinimumPayoutSar = command.MinimumPayoutSar;
+        fees.MinimumPayoutEgp = command.MinimumPayoutEgp;
         fees.UpdatedAtUtc = DateTime.UtcNow;
         await platform.SaveChangesAsync(cancellationToken);
-        return new FeesDto(fees.CommissionPercent, fees.MonthlyStudentFeeSar, fees.MonthlyStudentFeeEgp, fees.MinimumPayingAge);
+        return new FeesDto(fees.CommissionPercent, fees.MonthlyStudentFeeSar, fees.MonthlyStudentFeeEgp, fees.MinimumPayingAge, fees.PayoutHoldDays, fees.MinimumPayoutSar, fees.MinimumPayoutEgp);
     }
 
     public async Task<Result> SetCommissionAsync(string slug, decimal? commissionPercent, CancellationToken cancellationToken)

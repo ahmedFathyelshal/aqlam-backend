@@ -55,6 +55,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<TeacherPhoto> TeacherPhotos => Set<TeacherPhoto>();
     public DbSet<AqlamAcademy.Domain.Payments.Payment> Payments => Set<AqlamAcademy.Domain.Payments.Payment>();
     public DbSet<AqlamAcademy.Domain.Payments.LedgerEntry> LedgerEntries => Set<AqlamAcademy.Domain.Payments.LedgerEntry>();
+    public DbSet<AqlamAcademy.Domain.Payments.Payout> Payouts => Set<AqlamAcademy.Domain.Payments.Payout>();
+    public DbSet<AqlamAcademy.Domain.Payments.PayoutAccount> PayoutAccounts => Set<AqlamAcademy.Domain.Payments.PayoutAccount>();
     public DbSet<AqlamAcademy.Domain.Payments.PlatformFees> PlatformFees => Set<AqlamAcademy.Domain.Payments.PlatformFees>();
     public DbSet<AqlamAcademy.Domain.Payments.ActivationCodeBatch> ActivationCodeBatches => Set<AqlamAcademy.Domain.Payments.ActivationCodeBatch>();
     public DbSet<AqlamAcademy.Domain.Payments.ActivationCode> ActivationCodes => Set<AqlamAcademy.Domain.Payments.ActivationCode>();

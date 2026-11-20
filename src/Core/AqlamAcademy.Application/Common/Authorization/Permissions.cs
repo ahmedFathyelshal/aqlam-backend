@@ -20,10 +20,12 @@ public static class Permissions
     public const string GradesEdit = "grades.edit";
     public const string FinanceView = "finance.view";
     public const string OrganizationSettings = "org.settings";
+    /// <summary>Save bank details and ask for a payout: owners only.</summary>
+    public const string FinanceWithdraw = "finance.withdraw";
 
     private static readonly Dictionary<OrganizationRole, string[]> RoleGrants = new()
     {
-        [OrganizationRole.Owner] = [CoursesView, CoursesEdit, CoursesPublish, MembersView, MembersManage, ClassesManage, AttendanceTake, AnnouncementsSend, GradesEdit, FinanceView, OrganizationSettings],
+        [OrganizationRole.Owner] = [CoursesView, CoursesEdit, CoursesPublish, MembersView, MembersManage, ClassesManage, AttendanceTake, AnnouncementsSend, GradesEdit, FinanceView, FinanceWithdraw, OrganizationSettings],
         [OrganizationRole.Admin] = [CoursesView, CoursesEdit, CoursesPublish, MembersView, MembersManage, ClassesManage, AttendanceTake, AnnouncementsSend, GradesEdit, OrganizationSettings],
         [OrganizationRole.AcademicCoordinator] = [CoursesView, CoursesEdit, CoursesPublish, MembersView, ClassesManage, AttendanceTake, AnnouncementsSend, GradesEdit],
         [OrganizationRole.Teacher] = [CoursesView, CoursesEdit, MembersView, AttendanceTake, AnnouncementsSend, GradesEdit],

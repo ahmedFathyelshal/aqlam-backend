@@ -117,12 +117,47 @@ public class LedgerEntryConfiguration : IEntityTypeConfiguration<LedgerEntry>
         builder.ToTable("LedgerEntries", SchemaNames.Payments);
         builder.HasKey(x => x.Id);
         builder.HasIndex(x => x.TransactionId);
+        builder.HasIndex(x => x.PayoutId);
         builder.HasIndex(x => new { x.OrganizationId, x.Account });
         // A payment is booked once, whatever the provider repeats.
         builder.HasIndex(x => new { x.PaymentId, x.Account }).IsUnique().HasFilter($"\"{nameof(LedgerEntry.PaymentId)}\" IS NOT NULL");
         builder.Property(x => x.Amount).HasPrecision(18, 4);
         builder.Property(x => x.Currency).HasMaxLength(3).IsRequired();
         builder.Property(x => x.Description).HasMaxLength(300).IsRequired();
+    }
+}
+
+public class PayoutAccountConfiguration : IEntityTypeConfiguration<PayoutAccount>
+{
+    public void Configure(EntityTypeBuilder<PayoutAccount> builder)
+    {
+        builder.ToTable("PayoutAccounts", SchemaNames.Payments);
+        builder.HasKey(x => x.Id);
+        builder.HasIndex(x => x.OrganizationId).IsUnique();
+        builder.Property(x => x.AccountHolder).HasMaxLength(120).IsRequired();
+        builder.Property(x => x.BankName).HasMaxLength(120).IsRequired();
+        builder.Property(x => x.Iban).HasMaxLength(40).IsRequired();
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class PayoutConfiguration : IEntityTypeConfiguration<Payout>
+{
+    public void Configure(EntityTypeBuilder<Payout> builder)
+    {
+        builder.ToTable("Payouts", SchemaNames.Payments);
+        builder.HasKey(x => x.Id);
+        builder.HasIndex(x => new { x.OrganizationId, x.RequestedAtUtc });
+        builder.HasIndex(x => new { x.Status, x.RequestedAtUtc });
+        // One open request per organization and currency: a double click or two owners cannot reserve the money twice.
+        builder.HasIndex(x => new { x.OrganizationId, x.Currency }).IsUnique().HasFilter($"\"{nameof(Payout.Status)}\" = {(int)PayoutStatus.Requested}");
+        builder.Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+        builder.Property(x => x.AccountHolder).HasMaxLength(120).IsRequired();
+        builder.Property(x => x.BankName).HasMaxLength(120).IsRequired();
+        builder.Property(x => x.Iban).HasMaxLength(40).IsRequired();
+        builder.Property(x => x.TransferReference).HasMaxLength(120);
+        builder.Property(x => x.RejectionReason).HasMaxLength(500);
     }
 }
 
@@ -136,6 +171,8 @@ public class PlatformFeesConfiguration : IEntityTypeConfiguration<PlatformFees>
         builder.Property(x => x.CommissionPercent).HasPrecision(5, 2);
         builder.Property(x => x.MonthlyStudentFeeSar).HasPrecision(18, 2);
         builder.Property(x => x.MonthlyStudentFeeEgp).HasPrecision(18, 2);
+        builder.Property(x => x.MinimumPayoutSar).HasPrecision(18, 2);
+        builder.Property(x => x.MinimumPayoutEgp).HasPrecision(18, 2);
     }
 }
 

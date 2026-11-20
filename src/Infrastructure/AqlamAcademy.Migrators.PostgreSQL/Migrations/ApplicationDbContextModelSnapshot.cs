@@ -1203,10 +1203,15 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<Guid?>("PaymentId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("PayoutId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("TransactionId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PayoutId");
 
                     b.HasIndex("TransactionId");
 
@@ -1294,6 +1299,110 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.ToTable("Payments", "Payments");
                 });
 
+            modelBuilder.Entity("AqlamAcademy.Domain.Payments.Payout", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccountHolder")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<string>("Iban")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ProcessedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ProcessedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("RequestedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TransferReference")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "Currency")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 1");
+
+                    b.HasIndex("OrganizationId", "RequestedAtUtc");
+
+                    b.HasIndex("Status", "RequestedAtUtc");
+
+                    b.ToTable("Payouts", "Payments");
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Payments.PayoutAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccountHolder")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Iban")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId")
+                        .IsUnique();
+
+                    b.ToTable("PayoutAccounts", "Payments");
+                });
+
             modelBuilder.Entity("AqlamAcademy.Domain.Payments.PlatformFees", b =>
                 {
                     b.Property<int>("Id")
@@ -1306,6 +1415,14 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<int>("MinimumPayingAge")
                         .HasColumnType("integer");
 
+                    b.Property<decimal?>("MinimumPayoutEgp")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("MinimumPayoutSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<decimal?>("MonthlyStudentFeeEgp")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -1313,6 +1430,9 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                     b.Property<decimal?>("MonthlyStudentFeeSar")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("PayoutHoldDays")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -2074,6 +2194,15 @@ namespace AqlamAcademy.Migrators.PostgreSQL.Migrations
                 });
 
             modelBuilder.Entity("AqlamAcademy.Domain.Payments.ActivationCodeBatch", b =>
+                {
+                    b.HasOne("AqlamAcademy.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AqlamAcademy.Domain.Payments.PayoutAccount", b =>
                 {
                     b.HasOne("AqlamAcademy.Domain.Organizations.Organization", null)
                         .WithMany()

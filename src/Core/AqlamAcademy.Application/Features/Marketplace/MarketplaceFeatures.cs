@@ -184,7 +184,7 @@ public class SaveTeacherPhotoCommandHandler(IPublicProfileService profiles) : IR
 
 // ---------- Platform admin: featured teachers and fees ----------
 
-public record FeesDto(decimal? CommissionPercent, decimal? MonthlyStudentFeeSar, decimal? MonthlyStudentFeeEgp, int MinimumPayingAge = 18);
+public record FeesDto(decimal? CommissionPercent, decimal? MonthlyStudentFeeSar, decimal? MonthlyStudentFeeEgp, int MinimumPayingAge = 18, int PayoutHoldDays = 7, decimal? MinimumPayoutSar = null, decimal? MinimumPayoutEgp = null);
 
 public record AdminTeacherDto(Guid OrganizationId, string Slug, string Name, string CountryCode, int CourseCount);
 
@@ -216,7 +216,7 @@ public class FeatureTeacherCommandHandler(IPlatformMarketplaceService service) :
         service.FeatureAsync(request, cancellationToken);
 }
 
-public record SaveFeesCommand(decimal? CommissionPercent, decimal? MonthlyStudentFeeSar, decimal? MonthlyStudentFeeEgp, int MinimumPayingAge = 18) : IRequest<Result<FeesDto>>;
+public record SaveFeesCommand(decimal? CommissionPercent, decimal? MonthlyStudentFeeSar, decimal? MonthlyStudentFeeEgp, int MinimumPayingAge = 18, int PayoutHoldDays = 7, decimal? MinimumPayoutSar = null, decimal? MinimumPayoutEgp = null) : IRequest<Result<FeesDto>>;
 
 public class SaveFeesCommandValidator : AbstractValidator<SaveFeesCommand>
 {
@@ -226,6 +226,9 @@ public class SaveFeesCommandValidator : AbstractValidator<SaveFeesCommand>
         RuleFor(x => x.MonthlyStudentFeeSar).GreaterThanOrEqualTo(0);
         RuleFor(x => x.MonthlyStudentFeeEgp).GreaterThanOrEqualTo(0);
         RuleFor(x => x.MinimumPayingAge).InclusiveBetween(13, 18);
+        RuleFor(x => x.PayoutHoldDays).InclusiveBetween(0, 90);
+        RuleFor(x => x.MinimumPayoutSar).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MinimumPayoutEgp).GreaterThanOrEqualTo(0);
     }
 }
 

@@ -51,7 +51,55 @@ public enum LedgerAccount
     /// <summary>The provider's charge for the payment.</summary>
     ProviderFees = 3,
     /// <summary>What an organization has earned and will be paid out.</summary>
-    OrganizationEarnings = 4
+    OrganizationEarnings = 4,
+    /// <summary>Money reserved for a withdrawal request that has not been paid or turned down yet.</summary>
+    PayoutsInTransit = 5
+}
+
+public enum PayoutStatus
+{
+    Requested = 1,
+    Paid = 2,
+    Rejected = 3,
+    Cancelled = 4
+}
+
+/// <summary>Where an organization wants its earnings sent (bank transfer). One per organization.</summary>
+public class PayoutAccount
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid OrganizationId { get; set; }
+    public string AccountHolder { get; set; } = string.Empty;
+    public string BankName { get; set; } = string.Empty;
+    /// <summary>IBAN or account number, stored as typed (spaces removed, upper case).</summary>
+    public string Iban { get; set; } = string.Empty;
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// A withdrawal request (story 50). The bank details are copied when it is made, so changing them later never
+/// redirects a request already in flight. The platform admin pays outside the app and records the result (story 51).
+/// </summary>
+public class Payout
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid OrganizationId { get; set; }
+    public Guid RequestedByUserId { get; set; }
+    public decimal Amount { get; set; }
+    public string Currency { get; set; } = "SAR";
+    public PayoutStatus Status { get; set; } = PayoutStatus.Requested;
+
+    public string AccountHolder { get; set; } = string.Empty;
+    public string BankName { get; set; } = string.Empty;
+    public string Iban { get; set; } = string.Empty;
+
+    public DateTime RequestedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? ProcessedAtUtc { get; set; }
+    public Guid? ProcessedByUserId { get; set; }
+    /// <summary>The bank transfer reference, set when paid.</summary>
+    public string? TransferReference { get; set; }
+    /// <summary>Why it was turned down, shown to the teacher.</summary>
+    public string? RejectionReason { get; set; }
 }
 
 /// <summary>
@@ -69,6 +117,7 @@ public class LedgerEntry
     public decimal Amount { get; set; }
     public string Currency { get; set; } = "SAR";
     public Guid? PaymentId { get; set; }
+    public Guid? PayoutId { get; set; }
     public string Description { get; set; } = string.Empty;
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
@@ -92,12 +141,24 @@ public class PlatformFees
     /// a lower value lets teens whose parents cannot be reached buy for themselves. Changed by the platform admin.
     /// </summary>
     public int MinimumPayingAge { get; set; } = 18;
+    /// <summary>Days a sale stays "pending" (not withdrawable) so refunds and disputes can be handled first.</summary>
+    public int PayoutHoldDays { get; set; } = 7;
+    /// <summary>Smallest withdrawal per currency; null means no minimum.</summary>
+    public decimal? MinimumPayoutSar { get; set; }
+    public decimal? MinimumPayoutEgp { get; set; }
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public decimal? MonthlyFeeFor(string currency) => currency switch
     {
         "SAR" => MonthlyStudentFeeSar,
         "EGP" => MonthlyStudentFeeEgp,
+        _ => null
+    };
+
+    public decimal? MinimumPayoutFor(string currency) => currency switch
+    {
+        "SAR" => MinimumPayoutSar,
+        "EGP" => MinimumPayoutEgp,
         _ => null
     };
 

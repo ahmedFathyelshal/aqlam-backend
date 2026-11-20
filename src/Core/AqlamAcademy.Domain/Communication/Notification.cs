@@ -4,7 +4,8 @@ public enum NotificationType
 {
     Announcement = 1,
     Absence = 2,
-    Late = 3
+    Late = 3,
+    Payout = 4
 }
 
 /// <summary>

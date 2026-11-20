@@ -102,6 +102,9 @@ public static class DependencyInjection
         services.AddSingleton<Payments.PaymentProviders>();
         services.AddScoped<AqlamAcademy.Application.Features.Payments.IPaymentService, Payments.PaymentService>();
         services.AddScoped<AqlamAcademy.Application.Features.Payments.IEarningsService, Payments.EarningsService>();
+        services.AddScoped<Payments.WalletService>();
+        services.AddScoped<AqlamAcademy.Application.Features.Payments.IWalletService>(sp => sp.GetRequiredService<Payments.WalletService>());
+        services.AddScoped<AqlamAcademy.Application.Features.Payments.IPayoutAdminService>(sp => sp.GetRequiredService<Payments.WalletService>());
         services.AddScoped<Payments.CodeHashKey>();
         services.AddScoped<AqlamAcademy.Application.Features.Payments.IActivationCodeService, Payments.ActivationCodeService>();
 
